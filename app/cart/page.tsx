@@ -162,13 +162,13 @@ export default function CartPage() {
                         <div className="md:justify-self-center">
                           <div className="inline-flex h-11 items-center rounded-sm border border-[#dedede]">
                             <button
-                            
+
                               type="button"
                               onClick={() => updateQuantity(line.id, line.quantity - 1)}
                               className="grid h-full w-11 place-items-center text-[18px] text-[#444] hover:bg-[#f4f4f4]"
                               aria-label={`Decrease quantity for ${line.name}`}
                             >
-                              -
+                            
                             </button>
                             <span className="grid h-full min-w-[42px] place-items-center border-x border-[#dedede] text-[14px]">
                               {line.quantity}
