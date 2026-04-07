@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 48" role="img" aria-label="Diners Club">
+  <rect width="80" height="48" rx="4" fill="#0079be"/>
+  <text x="40" y="21" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" font-weight="700" fill="#fff">DINERS</text>
+  <text x="40" y="31" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" font-weight="700" fill="#fff">CLUB</text>
+</svg>

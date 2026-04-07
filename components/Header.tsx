@@ -1,5 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
+import { usePathname } from "next/navigation";
+import { useCartSidebar } from "./CartSidebar";
+import { useLoginModal } from "./LoginModal";
+import { useSearchSidebar } from "./SearchSidebar";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -11,7 +17,7 @@ const navItems = [
   { label: "Catalog", href: "/" },
   { label: "New Arrivals", href: "/new-arrivals" },
   { label: "All collections", href: "/collections" },
-  { label: "Contact us", href: "/" },
+  { label: "Contact us", href: "/contact-us" },
 ];
 
 const catalogItems = [
@@ -77,6 +83,15 @@ function ChevronDownIcon() {
 }
 
 export default function Header() {
+  const pathname = usePathname();
+  const { open: searchOpen, openSearch, closeSearch } = useSearchSidebar();
+  const { open: cartOpen, openCart, closeCart, itemCount } = useCartSidebar();
+  const { openLogin } = useLoginModal();
+
+  if (pathname === "/checkout") {
+    return null;
+  }
+
   return (
     <header className="border-b border-[#f0f0f0] bg-white">
       <div className="mx-auto flex h-24 max-w-[1320px] items-center px-6 lg:px-10">
@@ -130,24 +145,50 @@ export default function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-6 text-[#222]">
-          <button type="button" aria-label="Search" className="cursor-pointer">
+          <button
+            type="button"
+            aria-label="Search"
+            aria-expanded={searchOpen}
+            aria-haspopup="dialog"
+            className="cursor-pointer"
+            onClick={() => {
+              closeCart();
+              openSearch();
+            }}
+          >
             <SearchIcon />
           </button>
 
           <button
             type="button"
-            aria-label="Shopping cart"
+            aria-label={`Shopping cart, ${itemCount} items`}
+            aria-expanded={cartOpen}
+            aria-haspopup="dialog"
             className="relative cursor-pointer"
+            onClick={() => {
+              closeSearch();
+              openCart();
+            }}
           >
             <CartIcon />
-            <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-[#9ea600] text-[10px] font-semibold text-white">
-              0
+            <span
+              className={`absolute -top-1 -right-1 grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold text-white ${
+                itemCount > 0 ? "bg-[#9ea600]" : "bg-[#bfc49a]"
+              }`}
+            >
+              {itemCount > 99 ? "99+" : itemCount}
             </span>
           </button>
 
           <button
             type="button"
-            className="h-13 rounded-none bg-[#9ea600] px-9 text-[19px] font-medium text-white ml-2"
+            aria-haspopup="dialog"
+            className="h-13 rounded-none bg-[#9ea600] px-9 text-[19px] font-medium text-white ml-2 cursor-pointer transition-[filter] hover:brightness-105 active:brightness-95"
+            onClick={() => {
+              closeSearch();
+              closeCart();
+              openLogin();
+            }}
           >
             Login
           </button>

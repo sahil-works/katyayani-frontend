@@ -72,9 +72,19 @@ const products = [
   },
 ];
 
+const PRICE_MAX = 9495;
+
+function formatInr(amount) {
+  return amount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export default function NewArrivalsPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("date-desc");
+  const [minPrice, setMinPrice] = useState(0);
 
   const sortedProducts = useMemo(() => {
     const clonedProducts = [...products];
@@ -105,6 +115,9 @@ export default function NewArrivalsPage() {
 
     return clonedProducts;
   }, [sortBy]);
+
+  const priceProgressPct =
+    PRICE_MAX > 0 ? `${(minPrice / PRICE_MAX) * 100}%` : "0%";
 
   return (
     <main className="min-h-[calc(100vh-96px)] bg-white">
@@ -161,25 +174,44 @@ export default function NewArrivalsPage() {
                 <span>Price</span>
               </button>
 
-              <div className="mt-8">
+              <div className="new-arrivals-range-wrap mt-6">
+                <div className="mb-2 flex justify-between text-[12px] font-medium tracking-wide text-[#888] uppercase">
+                  <span>Min</span>
+                  <span>Max</span>
+                </div>
                 <input
                   type="range"
                   min="0"
-                  max="9495"
-                  defaultValue="0"
-                  className="new-arrivals-range w-full accent-[#222]"
+                  max={PRICE_MAX}
+                  step="50"
+                  value={minPrice}
+                  onChange={(e) =>
+                    setMinPrice(Number.parseInt(e.target.value, 10))
+                  }
+                  className="new-arrivals-range"
+                  style={{ "--range-progress": priceProgressPct }}
                   aria-label="Minimum price"
                 />
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 rounded-md border border-[#e6e6e6] bg-white px-3 py-2 text-[14px] text-[#4a4a4a]">
-                  <span className="text-[#666]">₹</span>
-                  <span>0</span>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-[#e8e8e8] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-shadow hover:shadow-[0_2px_8px_rgba(158,166,0,0.12)]">
+                  <div className="text-[11px] font-medium tracking-[0.06em] text-[#9a9a9a] uppercase">
+                    From
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1 text-[15px] font-medium text-[#2d2d2d] tabular-nums">
+                    <span className="text-[#9ea600]">₹</span>
+                    <span>{formatInr(minPrice)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 rounded-md border border-[#e6e6e6] bg-white px-3 py-2 text-[14px] text-[#4a4a4a]">
-                  <span className="text-[#666]">₹</span>
-                  <span>9495.00</span>
+                <div className="rounded-lg border border-[#e8e8e8] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+                  <div className="text-[11px] font-medium tracking-[0.06em] text-[#9a9a9a] uppercase">
+                    To
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1 text-[15px] font-medium text-[#2d2d2d] tabular-nums">
+                    <span className="text-[#9ea600]">₹</span>
+                    <span>{formatInr(PRICE_MAX)}</span>
+                  </div>
                 </div>
               </div>
             </div>

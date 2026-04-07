@@ -1,6 +1,9 @@
+"use client";
+
 import { Dancing_Script } from "next/font/google";
 import Image from "next/image";
 import { Heart } from "lucide-react";
+import { useCartSidebar } from "./CartSidebar";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -12,6 +15,7 @@ const products = [
     id: 1,
     title: "Cotron Chanderi Elegant Suit Set",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-one.png",
   },
@@ -19,6 +23,7 @@ const products = [
     id: 2,
     title: "Lightweight Crinkled Mul Cotton Suit",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-two.png",
   },
@@ -26,6 +31,7 @@ const products = [
     id: 3,
     title: "Cotron Chanderi Elegant Suit Set",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-two.png",
   },
@@ -33,6 +39,7 @@ const products = [
     id: 4,
     title: "Crushed Tissue Unstitched Suits",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-one.png",
   },
@@ -40,6 +47,7 @@ const products = [
     id: 5,
     title: "Stunning Long Ethnic Dress Ajrakh",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-one.png",
   },
@@ -47,6 +55,7 @@ const products = [
     id: 6,
     title: "Hand-Embroidered Kurta With Work",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-two.png",
   },
@@ -54,6 +63,7 @@ const products = [
     id: 7,
     title: "Soft Mul Cotton Unstitched Suit",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-two.png",
   },
@@ -61,12 +71,15 @@ const products = [
     id: 8,
     title: "Ivory & Slate Blue Textured Suit",
     price: "Rs. 5,250.00",
+    unitPrice: 5250,
     oldPrice: "Rs. 7,500.00",
     image: "/assets/images/banner-one.png",
   },
 ];
 
 export default function NewArrivalsSection() {
+  const { addLine, openCart } = useCartSidebar();
+
   return (
     <section className="bg-[#f1f1f1] py-14">
       <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
@@ -115,7 +128,16 @@ export default function NewArrivalsSection() {
               </div>
               <button
                 type="button"
-                className="mt-2 border-b border-[#868686] pb-0.5 text-[20px] leading-none text-[#404040]"
+                className="mt-2 cursor-pointer border-b border-[#868686] pb-0.5 text-[20px] leading-none text-[#404040] transition-colors hover:text-black"
+                onClick={() => {
+                  addLine({
+                    id: `new-arrival-${product.id}`,
+                    name: product.title,
+                    unitPrice: product.unitPrice,
+                    imageSrc: product.image,
+                  });
+                  openCart();
+                }}
               >
                 Shop Now
               </button>
