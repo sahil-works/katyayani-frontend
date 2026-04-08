@@ -13,7 +13,7 @@ const quickLinks = [
   { label: "Catalog", href: "/" },
   { label: "New Arrivals", href: "/" },
   { label: "All Collections", href: "/" },
-  { label: "Contact Us", href: "/" },
+  { label: "Contact Us", href: "/contact-us" },
 ];
 
 const categories = [

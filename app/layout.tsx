@@ -3,6 +3,12 @@ import "./globals.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Header from "../components/Header";
+import { CartSidebar, CartSidebarProvider } from "../components/CartSidebar";
+import { LoginModal, LoginModalProvider } from "../components/LoginModal";
+import {
+  SearchSidebar,
+  SearchSidebarProvider,
+} from "../components/SearchSidebar";
 
 const jost = Jost({
   variable: "--font-jost",
@@ -23,8 +29,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jost.variable} h-full antialiased`}>
       <body className="min-h-full bg-white font-sans text-[#222]">
-        <Header />
-        {children}
+        <SearchSidebarProvider>
+          <CartSidebarProvider>
+            <LoginModalProvider>
+              <Header />
+              <SearchSidebar />
+              <CartSidebar />
+              <LoginModal />
+              {children}
+            </LoginModalProvider>
+          </CartSidebarProvider>
+        </SearchSidebarProvider>
       </body>
     </html>
   );

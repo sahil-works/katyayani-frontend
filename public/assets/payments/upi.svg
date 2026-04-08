@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 48" role="img" aria-label="UPI">
+  <rect width="80" height="48" rx="4" fill="#fff" stroke="#d1d5db"/>
+  <path fill="#097939" d="M14 30 22 14h6l-8 16h-6z"/>
+  <path fill="#e85d04" d="M26 30 34 14h6l-8 16h-6z"/>
+  <text x="52" y="30" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="800" fill="#1e3a5f">UPI</text>
+</svg>
