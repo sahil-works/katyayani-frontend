@@ -159,7 +159,16 @@ function EmptyCartIllustration({ className }: { className?: string }) {
 
 export function CartSidebarProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [lines, setLines] = useState<CartLine[]>([]);
+  const [lines, setLines] = useState<CartLine[]>(() => {
+    try {
+      const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as CartLine[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [addedToast, setAddedToast] = useState<{
     id: number;
     name: string;
@@ -223,18 +232,6 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearCart = useCallback(() => setLines([]), []);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(CART_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as CartLine[];
-      if (!Array.isArray(parsed)) return;
-      setLines(parsed);
-    } catch {
-      // Ignore bad local cart data.
-    }
-  }, []);
 
   useEffect(() => {
     try {
