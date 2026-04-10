@@ -2,6 +2,7 @@
 
 import { Dancing_Script } from "next/font/google";
 import Image from "next/image";
+import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useCartSidebar } from "./CartSidebar";
 
@@ -13,6 +14,7 @@ const dancingScript = Dancing_Script({
 const products = [
   {
     id: 1,
+    slug: "mul-cotton-chanderi-unstitched-suits",
     title: "Cotron Chanderi Elegant Suit Set",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -21,6 +23,7 @@ const products = [
   },
   {
     id: 2,
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     title: "Lightweight Crinkled Mul Cotton Suit",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -29,6 +32,7 @@ const products = [
   },
   {
     id: 3,
+    slug: "mul-chanderi-unstitched-suits",
     title: "Cotron Chanderi Elegant Suit Set",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -37,6 +41,7 @@ const products = [
   },
   {
     id: 4,
+    slug: "mirror-work-suit-set",
     title: "Crushed Tissue Unstitched Suits",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -45,6 +50,7 @@ const products = [
   },
   {
     id: 5,
+    slug: "silk-blend-festive-suit",
     title: "Stunning Long Ethnic Dress Ajrakh",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -53,6 +59,7 @@ const products = [
   },
   {
     id: 6,
+    slug: "mul-cotton-chanderi-unstitched-suits",
     title: "Hand-Embroidered Kurta With Work",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -61,6 +68,7 @@ const products = [
   },
   {
     id: 7,
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     title: "Soft Mul Cotton Unstitched Suit",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -69,6 +77,7 @@ const products = [
   },
   {
     id: 8,
+    slug: "mul-chanderi-unstitched-suits",
     title: "Ivory & Slate Blue Textured Suit",
     price: "Rs. 5,250.00",
     unitPrice: 5250,
@@ -101,46 +110,49 @@ export default function NewArrivalsSection() {
         <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
             <article key={product.id}>
-              <div className="relative overflow-hidden rounded-[18px]">
-                <Image
-                  src={product.image}
-                  alt={product.title}
-                  width={305}
-                  height={385}
-                  className="h-[380px] w-full object-cover"
-                />
-                <button
-                  type="button"
-                  aria-label={`Add ${product.title} to wishlist`}
-                  className="absolute top-3 right-3 grid h-7 w-7 place-items-center rounded-full bg-white text-[#ef4e4e] shadow-[0_2px_6px_rgba(0,0,0,0.15)]"
-                >
-                  <Heart className="h-4 w-4" fill="currentColor" strokeWidth={1.8} />
-                </button>
-              </div>
-              <h3 className="mt-3 line-clamp-1 text-[21px] text-[#1f1f1f]">
-                {product.title}
-              </h3>
+              <Link href={`/products/${product.slug}`} className="block">
+                <div className="relative overflow-hidden rounded-[18px]">
+                  <Image
+                    src={product.image}
+                    alt={product.title}
+                    width={305}
+                    height={385}
+                    className="h-[380px] w-full object-cover"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-3 right-3 grid h-7 w-7 place-items-center rounded-full bg-white text-[#ef4e4e] shadow-[0_2px_6px_rgba(0,0,0,0.15)]"
+                  >
+                    <Heart className="h-4 w-4" fill="currentColor" strokeWidth={1.8} />
+                  </span>
+                </div>
+                <h3 className="mt-3 line-clamp-1 text-[21px] text-[#1f1f1f]">
+                  {product.title}
+                </h3>
+              </Link>
               <div className="my-3 flex flex-nowrap items-center gap-2 whitespace-nowrap leading-none">
                 <span className="text-[22px] font-medium text-[#9ea600]">{product.price}</span>
                 <span className="text-[18px] text-[#7a7a7a] line-through">
                   {product.oldPrice}
                 </span>
               </div>
-              <button
-                type="button"
-                className="mt-2 cursor-pointer border-b border-[#868686] pb-0.5 text-[20px] leading-none text-[#404040] transition-colors hover:text-black"
-                onClick={() => {
-                  addLine({
-                    id: `new-arrival-${product.id}`,
-                    name: product.title,
-                    unitPrice: product.unitPrice,
-                    imageSrc: product.image,
-                  });
-                  openCart();
-                }}
-              >
-                Shop Now
-              </button>
+              <div className="mt-2 flex items-center">
+                <button
+                  type="button"
+                  className="cursor-pointer border-b border-[#868686] pb-0.5 text-[18px] leading-none text-[#404040] transition-colors hover:text-black"
+                  onClick={() => {
+                    addLine({
+                      id: `new-arrival-${product.id}`,
+                      name: product.title,
+                      unitPrice: product.unitPrice,
+                      imageSrc: product.image,
+                    });
+                    openCart();
+                  }}
+                >
+                  Add to Cart
+                </button>
+              </div>
             </article>
           ))}
         </div>

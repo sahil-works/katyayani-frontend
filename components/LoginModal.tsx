@@ -22,6 +22,8 @@ type LoginModalContextValue = {
   open: boolean;
   openLogin: () => void;
   closeLogin: () => void;
+  tab: LoginTab;
+  setTab: (tab: LoginTab) => void;
 };
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
@@ -36,14 +38,20 @@ export function useLoginModal() {
 
 export function LoginModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<LoginTab>("email");
 
-  const openLogin = useCallback(() => setOpen(true), []);
+  const openLogin = useCallback(() => {
+    setOpen(true);
+    setTab("email");
+  }, []);
   const closeLogin = useCallback(() => setOpen(false), []);
 
   const value: LoginModalContextValue = {
     open,
     openLogin,
     closeLogin,
+    tab,
+    setTab,
   };
 
   return (
@@ -107,10 +115,9 @@ function PhoneIcon({ className }: { className?: string }) {
 }
 
 export function LoginModal() {
-  const { open, closeLogin } = useLoginModal();
+  const { open, closeLogin, tab, setTab } = useLoginModal();
   const titleId = useId();
   const descriptionId = useId();
-  const [tab, setTab] = useState<LoginTab>("email");
 
   useEffect(() => {
     if (!open) return;
@@ -128,10 +135,6 @@ export function LoginModal() {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open, closeLogin]);
-
-  useEffect(() => {
-    if (!open) setTab("email");
-  }, [open]);
 
   return (
     <>
