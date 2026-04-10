@@ -18,42 +18,49 @@ function formatInr(value: number) {
 const recommendedProducts = [
   {
     id: "rec-1",
+    slug: "mul-cotton-chanderi-unstitched-suits",
     name: "Soft Mul Cotton Suit",
     priceInr: 5850,
     image: "/assets/images/banner-one.png",
   },
   {
     id: "rec-2",
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     name: "Soft Mul Cotton Suit",
     priceInr: 5850,
     image: "/assets/images/banner-two.png",
   },
   {
     id: "rec-3",
+    slug: "mul-chanderi-unstitched-suits",
     name: "Soft Mul Cotton Suit",
     priceInr: 5850,
     image: "/assets/images/sets.png",
   },
   {
     id: "rec-4",
+    slug: "mirror-work-suit-set",
     name: "Ivory Floral Embroidered Co-Ord Set",
     priceInr: 4650,
     image: "/assets/images/banner-one.png",
   },
   {
     id: "rec-5",
+    slug: "silk-blend-festive-suit",
     name: "Black & White Check Set With Dupatta And Pants",
     priceInr: 4650,
     image: "/assets/images/banner-two.png",
   },
   {
     id: "rec-6",
+    slug: "mul-cotton-chanderi-unstitched-suits",
     name: "Scalloped Embroidered Pastel Muslin Ensemble",
     priceInr: 3250,
     image: "/assets/images/sets.png",
   },
   {
     id: "rec-7",
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     name: "Scalloped Embroidered Pastel Muslin Ensemble",
     priceInr: 3250,
     image: "/assets/images/banner-one.png",
@@ -287,18 +294,20 @@ export default function CartPage() {
             <Slider {...sliderSettings}>
               {recommendedProducts.map((product) => (
                 <article key={product.id} className="px-1.5">
-                  <div className="relative overflow-hidden rounded-sm bg-[#f3f3f3]">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      width={260}
-                      height={335}
-                      className="h-[250px] w-full object-cover"
-                    />
-                  </div>
-                  <h3 className="mt-2 line-clamp-2 text-[14px] leading-tight text-[#202020]">
-                    {product.name}
-                  </h3>
+                  <Link href={`/products/${product.slug}`} className="block">
+                    <div className="relative overflow-hidden rounded-sm bg-[#f3f3f3]">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        width={260}
+                        height={335}
+                        className="h-[250px] w-full object-cover"
+                      />
+                    </div>
+                    <h3 className="mt-2 line-clamp-2 text-[14px] leading-tight text-[#202020]">
+                      {product.name}
+                    </h3>
+                  </Link>
                   <p className="mt-1 text-[14px] text-[#5a5a5a]">
                     {formatInr(product.priceInr)}
                   </p>

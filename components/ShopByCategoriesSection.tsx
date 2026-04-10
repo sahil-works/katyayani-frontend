@@ -1,5 +1,6 @@
 import { Dancing_Script } from "next/font/google";
 import Image from "next/image";
+import Link from "next/link";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -11,26 +12,31 @@ const categories = [
     id: 1,
     title: "Cotton Suits",
     image: "/assets/images/banner-one.png",
+    slug: "cotton-suits",
   },
   {
     id: 2,
     title: "Muslin Suits",
     image: "/assets/images/banner-two.png",
+    slug: "muslin-suits",
   },
   {
     id: 3,
     title: "Velvet Collection",
     image: "/assets/images/banner-one.png",
+    slug: "velvet-collection",
   },
   {
     id: 4,
     title: "Silk Collection",
     image: "/assets/images/banner-two.png",
+    slug: "silk-collection",
   },
   {
     id: 5,
     title: "Organza Suits",
     image: "/assets/images/banner-one.png",
+    slug: "organza-suits",
   },
 ];
 
@@ -54,18 +60,26 @@ export default function ShopByCategoriesSection() {
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-5 lg:gap-x-5">
           {categories.map((category) => (
-            <article key={category.id} className="text-center">
-              <div className="overflow-hidden rounded-[16px]">
-                <Image
-                  src={category.image}
-                  alt={category.title}
-                  width={245}
-                  height={180}
-                  className="h-[180px] w-full object-cover"
-                />
-              </div>
-              <h3 className="mt-3 text-[21px] leading-none text-[#111]">{category.title}</h3>
-            </article>
+            <Link
+              key={category.id}
+              href={`/new-arrivals?category=${category.slug}`}
+              className="group block text-center"
+            >
+              <article>
+                <div className="overflow-hidden rounded-[16px]">
+                  <Image
+                    src={category.image}
+                    alt={category.title}
+                    width={245}
+                    height={180}
+                    className="h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <h3 className="mt-3 text-[21px] leading-none text-[#111] transition-colors group-hover:text-[#9ea600]">
+                  {category.title}
+                </h3>
+              </article>
+            </Link>
           ))}
         </div>
       </div>

@@ -2,75 +2,100 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, LayoutGrid, List } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const products = [
   {
     id: 1,
+    slug: "mul-cotton-chanderi-unstitched-suits",
     title: "Brush Painted Floral Design Kurta",
     price: "Rs. 3,550.00",
     amount: 3550,
     createdAt: "2026-04-04",
     image: "/assets/images/banner-one.png",
+    category: "cotton-suits",
   },
   {
     id: 2,
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     title: "Soft Organza Unstitched Suit",
     price: "Rs. 4,350.00",
     amount: 4350,
     createdAt: "2026-04-06",
     image: "/assets/images/banner-two.png",
+    category: "muslin-suits",
   },
   {
     id: 3,
+    slug: "mul-chanderi-unstitched-suits",
     title: "Soft Organza Unstitched Suit",
     price: "Rs. 4,350.00",
     amount: 4350,
     createdAt: "2026-04-03",
     image: "/assets/images/banner-one.png",
+    category: "organza-suits",
   },
   {
     id: 4,
+    slug: "mirror-work-suit-set",
     title: "Soft Organza Unstitched Suit",
     price: "Rs. 4,350.00",
     amount: 4350,
     createdAt: "2026-04-05",
     image: "/assets/images/banner-two.png",
+    category: "silk-collection",
   },
   {
     id: 5,
+    slug: "silk-blend-festive-suit",
     title: "Printed Organza Kurta Set",
     price: "Rs. 3,950.00",
     amount: 3950,
     createdAt: "2026-04-02",
     image: "/assets/images/banner-one.png",
+    category: "velvet-collection",
   },
   {
     id: 6,
+    slug: "mul-cotton-chanderi-unstitched-suits",
     title: "Floral Organza Party Suit",
     price: "Rs. 4,650.00",
     amount: 4650,
     createdAt: "2026-04-01",
     image: "/assets/images/banner-two.png",
+    category: "organza-suits",
   },
   {
     id: 7,
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     title: "Chic Organza Embroidered Suit",
     price: "Rs. 4,150.00",
     amount: 4150,
     createdAt: "2026-03-31",
     image: "/assets/images/banner-one.png",
+    category: "cotton-suits",
   },
   {
     id: 8,
+    slug: "mul-chanderi-unstitched-suits",
     title: "Pastel Organza Straight Kurta",
     price: "Rs. 3,750.00",
     amount: 3750,
     createdAt: "2026-03-30",
     image: "/assets/images/banner-two.png",
+    category: "muslin-suits",
   },
 ];
+
+const categoryLabels = {
+  "cotton-suits": "Cotton Suits",
+  "muslin-suits": "Muslin Suits",
+  "velvet-collection": "Velvet Collection",
+  "silk-collection": "Silk Collection",
+  "organza-suits": "Organza Suits",
+};
 
 const PRICE_MAX = 9495;
 
@@ -82,12 +107,21 @@ function formatInr(amount) {
 }
 
 export default function NewArrivalsPage() {
+  const searchParams = useSearchParams();
+  const selectedCategory = searchParams.get("category");
+  const selectedCategoryLabel =
+    selectedCategory && categoryLabels[selectedCategory]
+      ? categoryLabels[selectedCategory]
+      : "Organza Suits";
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("date-desc");
   const [minPrice, setMinPrice] = useState(0);
 
   const sortedProducts = useMemo(() => {
-    const clonedProducts = [...products];
+    const filteredProducts = selectedCategory
+      ? products.filter((product) => product.category === selectedCategory)
+      : products;
+    const clonedProducts = [...filteredProducts];
 
     if (sortBy === "date-desc") {
       return clonedProducts.sort(
@@ -114,7 +148,7 @@ export default function NewArrivalsPage() {
     }
 
     return clonedProducts;
-  }, [sortBy]);
+  }, [sortBy, selectedCategory]);
 
   const priceProgressPct =
     PRICE_MAX > 0 ? `${(minPrice / PRICE_MAX) * 100}%` : "0%";
@@ -127,11 +161,11 @@ export default function NewArrivalsPage() {
             Home
           </Link>
           <span className="mx-2 text-[#9c9c9c]">/</span>
-          <span className="tracking-[0.03em] uppercase">Organza Suits</span>
+          <span className="tracking-[0.03em] uppercase">{selectedCategoryLabel}</span>
         </div>
 
         <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
-          ORGANZA SUITS
+          {selectedCategoryLabel.toUpperCase()}
         </h1>
 
         <section className="mt-16 grid gap-10 lg:grid-cols-[300px_1fr]">
@@ -265,7 +299,7 @@ export default function NewArrivalsPage() {
                     <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-[16px] w-[16px] -translate-y-1/2 text-[#747474] transition-colors group-hover:text-[#525252]" />
                   </div>
                 </div>
-                <span>564 Products</span>
+                <span>{sortedProducts.length} Products</span>
               </div>
             </div>
 
@@ -285,35 +319,40 @@ export default function NewArrivalsPage() {
                       : ""
                   }
                 >
-                  <Image
-                    src={product.image}
-                    alt={product.title}
-                    width={250}
-                    height={380}
-                    className={
-                      viewMode === "list"
-                        ? "h-[220px] w-full rounded-[14px] object-cover sm:w-[190px]"
-                        : "h-[380px] w-full rounded-[14px] object-cover"
-                    }
-                  />
-                  <div className={viewMode === "list" ? "sm:text-left" : ""}>
-                    <h3
-                      className={`text-[20px] leading-[1.1] font-medium text-[#222] ${
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className={viewMode === "list" ? "contents" : "block"}
+                  >
+                    <Image
+                      src={product.image}
+                      alt={product.title}
+                      width={250}
+                      height={380}
+                      className={
                         viewMode === "list"
-                          ? "mt-2 text-left"
-                          : "mt-5 text-center whitespace-nowrap overflow-hidden text-ellipsis"
-                      }`}
-                    >
-                      {product.title}
-                    </h3>
-                    <p
-                      className={`text-[20px] leading-none text-[#444] ${
-                        viewMode === "list" ? "mt-3 text-left" : "mt-4 text-center"
-                      }`}
-                    >
-                      {product.price}
-                    </p>
-                  </div>
+                          ? "h-[220px] w-full rounded-[14px] object-cover sm:w-[190px]"
+                          : "h-[380px] w-full rounded-[14px] object-cover"
+                      }
+                    />
+                    <div className={viewMode === "list" ? "sm:text-left" : ""}>
+                      <h3
+                        className={`text-[20px] leading-[1.1] font-medium text-[#222] ${
+                          viewMode === "list"
+                            ? "mt-2 text-left"
+                            : "mt-5 text-center whitespace-nowrap overflow-hidden text-ellipsis"
+                        }`}
+                      >
+                        {product.title}
+                      </h3>
+                      <p
+                        className={`text-[20px] leading-none text-[#444] ${
+                          viewMode === "list" ? "mt-3 text-left" : "mt-4 text-center"
+                        }`}
+                      >
+                        {product.price}
+                      </p>
+                    </div>
+                  </Link>
                 </article>
               ))}
             </div>

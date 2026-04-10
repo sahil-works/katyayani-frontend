@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import Slider from "react-slick";
 
 const bestCollectionItems = [
   {
     id: 1,
+    slug: "mul-cotton-chanderi-unstitched-suits",
     title: "Brush painted Floral design Kurta",
     price: "Rs. 5,250.00",
     oldPrice: "Rs. 7,500.00",
@@ -13,6 +15,7 @@ const bestCollectionItems = [
   },
   {
     id: 2,
+    slug: "mul-cotton-chanderi-unstitched-pearl",
     title: "Brush painted Floral design Kurta",
     price: "Rs. 5,250.00",
     oldPrice: "Rs. 7,500.00",
@@ -20,6 +23,7 @@ const bestCollectionItems = [
   },
   {
     id: 3,
+    slug: "mul-chanderi-unstitched-suits",
     title: "Cotton Chanderi Elegant Suit Set",
     price: "Rs. 4,990.00",
     oldPrice: "Rs. 6,800.00",
@@ -27,6 +31,7 @@ const bestCollectionItems = [
   },
   {
     id: 4,
+    slug: "mirror-work-suit-set",
     title: "Lightweight Crinkled Mul Cotton",
     price: "Rs. 5,450.00",
     oldPrice: "Rs. 7,100.00",
@@ -34,6 +39,7 @@ const bestCollectionItems = [
   },
   {
     id: 5,
+    slug: "silk-blend-festive-suit",
     title: "Hand-Embroidered Party Kurta",
     price: "Rs. 6,250.00",
     oldPrice: "Rs. 8,200.00",
@@ -41,6 +47,7 @@ const bestCollectionItems = [
   },
   {
     id: 6,
+    slug: "mul-cotton-chanderi-unstitched-suits",
     title: "Floral Printed Premium Suit",
     price: "Rs. 5,750.00",
     oldPrice: "Rs. 7,850.00",
@@ -50,6 +57,7 @@ const bestCollectionItems = [
 
 interface BestCollectionItem {
   id: number;
+  slug: string;
   title: string;
   price: string;
   oldPrice: string;
@@ -61,9 +69,11 @@ function BestCollectionCard({ item }: { item: BestCollectionItem }) {
     <article className="mx-2 flex overflow-hidden rounded-[20px] border border-[#e5e5de] bg-white">
       <div className="flex w-[50%] items-center px-6 py-6 sm:px-7">
         <div>
-          <h3 className="max-w-[220px] text-[24px] leading-[1.35] font-medium text-[#111] sm:text-[24px] sm:leading-[1.16]">
-            {item.title}
-          </h3>
+          <Link href={`/products/${item.slug}`} className="block">
+            <h3 className="max-w-[220px] text-[24px] leading-[1.35] font-medium text-[#111] sm:text-[24px] sm:leading-[1.16]">
+              {item.title}
+            </h3>
+          </Link>
           <div className="mt-4 flex flex-nowrap items-center gap-3 leading-none whitespace-nowrap">
             <span className="text-[21px] font-medium text-[#9ea600] sm:text-[21px]">
               {item.price}
@@ -72,16 +82,16 @@ function BestCollectionCard({ item }: { item: BestCollectionItem }) {
               {item.oldPrice}
             </span>
           </div>
-          <button
-            type="button"
-            className="mt-8 min-w-[118px] bg-[#9ea600] px-5 py-2 text-[19px] font-medium text-white"
+          <Link
+            href={`/products/${item.slug}`}
+            className="mt-8 inline-flex min-w-[118px] justify-center bg-[#9ea600] px-5 py-2 text-[19px] font-medium text-white"
           >
             Shop Now
-          </button>
+          </Link>
         </div>
       </div>
 
-      <div className="relative w-[50%] min-h-[350px]">
+      <Link href={`/products/${item.slug}`} className="relative block w-[50%] min-h-[350px]">
         <Image
           src={item.image}
           alt={item.title}
@@ -89,7 +99,7 @@ function BestCollectionCard({ item }: { item: BestCollectionItem }) {
           className="object-cover object-center"
           sizes="(min-width: 1024px) 360px, 100vw"
         />
-      </div>
+      </Link>
     </article>
   );
 }
