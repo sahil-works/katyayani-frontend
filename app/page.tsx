@@ -44,10 +44,9 @@ export default function Home() {
 
       <section className="bg-white">
         <div
-          className="relative py-16 mx-auto flex  w-full items-center justify-center overflow-hidden bg-cover bg-center px-6 text-center text-white sm:px-10"
-          style={{ backgroundImage: `url("${liveShoppingBannerImage}")` }}
+          className="live-shopping-banner relative py-16 mx-auto flex w-full items-center justify-center overflow-hidden px-6 text-center text-white sm:px-10"
+          style={{ backgroundImage: `url(${liveShoppingBannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           aria-label="Live video shopping banner"
-          role="img"
         >
           <div className="absolute inset-0 bg-black/45" />
 

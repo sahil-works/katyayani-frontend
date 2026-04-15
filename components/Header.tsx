@@ -93,6 +93,7 @@ export default function Header() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProfileMenuOpen(false);
   }, [pathname]);
 
