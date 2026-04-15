@@ -33,7 +33,9 @@ export default function Home() {
                 <span className="grid h-15 w-15 place-items-center rounded-full border border-[#d1d1d1] bg-white">
                   <Icon className="h-[28px] w-[28px] stroke-[1.75]" />
                 </span>
-                <p className="text-[19px] leading-none font-medium">{item.label}</p>
+                <p className="text-[19px] leading-none font-medium">
+                  {item.label}
+                </p>
               </div>
             );
           })}
@@ -45,7 +47,11 @@ export default function Home() {
       <section className="bg-white">
         <div
           className="live-shopping-banner relative py-16 mx-auto flex w-full items-center justify-center overflow-hidden px-6 text-center text-white sm:px-10"
-          style={{ backgroundImage: `url(${liveShoppingBannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          style={{
+            backgroundImage: `url(${liveShoppingBannerImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
           aria-label="Live video shopping banner"
         >
           <div className="absolute inset-0 bg-black/45" />
@@ -64,8 +70,8 @@ export default function Home() {
 
           <div className="relative z-10 max-w-[850px]">
             <h2 className="text-[28px] leading-[1.28] font-semibold sm:text-[42px]">
-              Shop from Anywhere, Anytime! Enjoy Live Video Shopping from 11 AM -
-              7 PM
+              Shop from Anywhere, Anytime! Enjoy Live Video Shopping from 11 AM
+              - 7 PM
             </h2>
             <p className="mt-6 text-[16px] leading-none text-white/95 sm:text-[21px]">
               Stylists On Call (English & Hindi)

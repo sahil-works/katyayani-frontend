@@ -125,7 +125,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-10 text-[18px] text-[#2f2f2f] lg:flex">
-          {navItems.map((item) => (
+          {navItems.map((item) =>
             item.label === "Catalog" ? (
               <div key={item.label} className="group relative">
                 <button
@@ -162,8 +162,8 @@ export default function Header() {
               >
                 {item.label}
               </Link>
-            )
-          ))}
+            ),
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-6 text-[#222]">
@@ -229,7 +229,9 @@ export default function Header() {
               >
                 <div className="mb-1 border-b border-[#f1f1ea] px-3 pb-2 pt-1">
                   <p className="text-[13px] text-[#6b6b6b]">Signed in as</p>
-                  <p className="truncate text-[14px] font-medium text-[#222]">{user.email}</p>
+                  <p className="truncate text-[14px] font-medium text-[#222]">
+                    {user.email}
+                  </p>
                 </div>
                 <Link
                   href="/account/profile"

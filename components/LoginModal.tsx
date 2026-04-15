@@ -91,7 +91,9 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
 
     return {
       name: prettyName,
-      email: safeIdentity.includes("@") ? safeIdentity : "shopper@katyayani.com",
+      email: safeIdentity.includes("@")
+        ? safeIdentity
+        : "shopper@katyayani.com",
       initials,
     };
   }, []);
@@ -108,7 +110,7 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
       setOpen(false);
       return true;
     },
-    [DUMMY_EMAIL, DUMMY_PASSWORD, createUserFromIdentity]
+    [DUMMY_EMAIL, DUMMY_PASSWORD, createUserFromIdentity],
   );
 
   const loginWithPhone = useCallback(
@@ -121,7 +123,7 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
       setOpen(false);
       return true;
     },
-    [DUMMY_OTP, DUMMY_PHONE, createUserFromIdentity]
+    [DUMMY_OTP, DUMMY_PHONE, createUserFromIdentity],
   );
 
   const value: LoginModalContextValue = {
@@ -198,7 +200,8 @@ function PhoneIcon({ className }: { className?: string }) {
 }
 
 export function LoginModal() {
-  const { open, closeLogin, tab, setTab, loginWithEmail, loginWithPhone } = useLoginModal();
+  const { open, closeLogin, tab, setTab, loginWithEmail, loginWithPhone } =
+    useLoginModal();
   const titleId = useId();
   const descriptionId = useId();
   const [emailError, setEmailError] = useState("");
@@ -269,10 +272,7 @@ export function LoginModal() {
           </button>
 
           <div className="px-7 pb-8 pt-9 sm:px-9 sm:pt-10">
-            <p
-              id={descriptionId}
-              className="sr-only"
-            >
+            <p id={descriptionId} className="sr-only">
               Sign in with your email and password, or with your phone number
               and a one-time code.
             </p>
@@ -349,7 +349,7 @@ export function LoginModal() {
                     setEmailError(
                       success
                         ? ""
-                        : "Invalid credentials. Use demo@katyayani.com / 123456"
+                        : "Invalid credentials. Use demo@katyayani.com / 123456",
                     );
                   }}
                 >
@@ -369,7 +369,8 @@ export function LoginModal() {
                       className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none transition-[border-color,box-shadow] placeholder:text-[#9a9a9a] focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
                     />
                     <p className="mt-1 text-[12px] text-[#7a7a7a]">
-                      Demo username: <span className="font-medium">demo@katyayani.com</span>
+                      Demo username:{" "}
+                      <span className="font-medium">demo@katyayani.com</span>
                     </p>
                   </div>
                   <div>
@@ -400,7 +401,9 @@ export function LoginModal() {
                     </p>
                   </div>
                   {emailError ? (
-                    <p className="text-[13px] font-medium text-[#c14747]">{emailError}</p>
+                    <p className="text-[13px] font-medium text-[#c14747]">
+                      {emailError}
+                    </p>
                   ) : null}
                   <button
                     type="submit"
@@ -424,7 +427,7 @@ export function LoginModal() {
                     setPhoneError(
                       success
                         ? ""
-                        : "Invalid phone login. Use 9876543210 and OTP 123456"
+                        : "Invalid phone login. Use 9876543210 and OTP 123456",
                     );
                   }}
                 >
@@ -453,7 +456,8 @@ export function LoginModal() {
                       We’ll text you a one-time code to verify it’s you.
                     </p>
                     <p className="mt-1 text-[12px] text-[#7a7a7a]">
-                      Demo phone: <span className="font-medium">9876543210</span>
+                      Demo phone:{" "}
+                      <span className="font-medium">9876543210</span>
                     </p>
                   </div>
                   <div>
@@ -478,7 +482,9 @@ export function LoginModal() {
                     </p>
                   </div>
                   {phoneError ? (
-                    <p className="text-[13px] font-medium text-[#c14747]">{phoneError}</p>
+                    <p className="text-[13px] font-medium text-[#c14747]">
+                      {phoneError}
+                    </p>
                   ) : null}
                   <div className="flex gap-3">
                     <button

@@ -136,13 +136,15 @@ export default function NewArrivalsContent() {
 
     if (sortBy === "date-desc") {
       return clonedProducts.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     }
 
     if (sortBy === "date-asc") {
       return clonedProducts.sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
@@ -172,7 +174,9 @@ export default function NewArrivalsContent() {
             Home
           </Link>
           <span className="mx-2 text-[#9c9c9c]">/</span>
-          <span className="tracking-[0.03em] uppercase">{selectedCategoryLabel}</span>
+          <span className="tracking-[0.03em] uppercase">
+            {selectedCategoryLabel}
+          </span>
         </div>
 
         <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
@@ -234,7 +238,11 @@ export default function NewArrivalsContent() {
                     setMinPrice(Number.parseInt(e.target.value, 10))
                   }
                   className="new-arrivals-range"
-                  style={{ "--range-progress": priceProgressPct } as React.CSSProperties}
+                  style={
+                    {
+                      "--range-progress": priceProgressPct,
+                    } as React.CSSProperties
+                  }
                   aria-label="Minimum price"
                 />
               </div>
@@ -357,7 +365,9 @@ export default function NewArrivalsContent() {
                       </h3>
                       <p
                         className={`text-[20px] leading-none text-[#444] ${
-                          viewMode === "list" ? "mt-3 text-left" : "mt-4 text-center"
+                          viewMode === "list"
+                            ? "mt-3 text-left"
+                            : "mt-4 text-center"
                         }`}
                       >
                         {product.price}
