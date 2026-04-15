@@ -30,9 +30,11 @@ type LoginModalContextValue = {
   closeLogin: () => void;
   isLoggedIn: boolean;
   user: AuthUser | null;
-  loginWithEmail: (email: string) => void;
-  loginWithPhone: (phone: string) => void;
+  loginWithEmail: (email: string, password: string) => boolean;
+  loginWithPhone: (phone: string, otp: string) => boolean;
   logout: () => void;
+  tab: LoginTab;
+  setTab: (tab: LoginTab) => void;
 };
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
@@ -47,9 +49,18 @@ export function useLoginModal() {
 
 export function LoginModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<LoginTab>("email");
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  const openLogin = useCallback(() => setOpen(true), []);
+  const DUMMY_EMAIL = "demo@katyayani.com";
+  const DUMMY_PASSWORD = "123456";
+  const DUMMY_PHONE = "9876543210";
+  const DUMMY_OTP = "123456";
+
+  const openLogin = useCallback(() => {
+    setOpen(true);
+    setTab("email");
+  }, []);
   const closeLogin = useCallback(() => setOpen(false), []);
   const logout = useCallback(() => setUser(null), []);
 
@@ -86,19 +97,31 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginWithEmail = useCallback(
-    (email: string) => {
+    (email: string, password: string) => {
+      if (
+        email.trim().toLowerCase() !== DUMMY_EMAIL ||
+        password.trim() !== DUMMY_PASSWORD
+      ) {
+        return false;
+      }
       setUser(createUserFromIdentity(email || "shopper@katyayani.com"));
       setOpen(false);
+      return true;
     },
-    [createUserFromIdentity]
+    [DUMMY_EMAIL, DUMMY_PASSWORD, createUserFromIdentity]
   );
 
   const loginWithPhone = useCallback(
-    (phone: string) => {
+    (phone: string, otp: string) => {
+      const normalizedPhone = phone.replace(/\D/g, "");
+      if (normalizedPhone !== DUMMY_PHONE || otp.trim() !== DUMMY_OTP) {
+        return false;
+      }
       setUser(createUserFromIdentity(phone || "Katyayani Shopper"));
       setOpen(false);
+      return true;
     },
-    [createUserFromIdentity]
+    [DUMMY_OTP, DUMMY_PHONE, createUserFromIdentity]
   );
 
   const value: LoginModalContextValue = {
@@ -110,6 +133,8 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
     loginWithEmail,
     loginWithPhone,
     logout,
+    tab,
+    setTab,
   };
 
   return (
@@ -173,10 +198,11 @@ function PhoneIcon({ className }: { className?: string }) {
 }
 
 export function LoginModal() {
-  const { open, closeLogin, loginWithEmail, loginWithPhone } = useLoginModal();
+  const { open, closeLogin, tab, setTab, loginWithEmail, loginWithPhone } = useLoginModal();
   const titleId = useId();
   const descriptionId = useId();
-  const [tab, setTab] = useState<LoginTab>("email");
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -196,7 +222,10 @@ export function LoginModal() {
   }, [open, closeLogin]);
 
   useEffect(() => {
-    if (!open) setTab("email");
+    if (!open) {
+      setEmailError("");
+      setPhoneError("");
+    }
   }, [open]);
 
   return (
@@ -314,7 +343,13 @@ export function LoginModal() {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const email = String(formData.get("email") ?? "");
-                    loginWithEmail(email);
+                    const password = String(formData.get("password") ?? "");
+                    const success = loginWithEmail(email, password);
+                    setEmailError(
+                      success
+                        ? ""
+                        : "Invalid credentials. Use demo@katyayani.com / 123456"
+                    );
                   }}
                 >
                   <div>
@@ -332,6 +367,9 @@ export function LoginModal() {
                       placeholder="you@example.com"
                       className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none transition-[border-color,box-shadow] placeholder:text-[#9a9a9a] focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
                     />
+                    <p className="mt-1 text-[12px] text-[#7a7a7a]">
+                      Demo username: <span className="font-medium">demo@katyayani.com</span>
+                    </p>
                   </div>
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
@@ -356,7 +394,13 @@ export function LoginModal() {
                       placeholder="••••••••"
                       className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none transition-[border-color,box-shadow] placeholder:text-[#9a9a9a] focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
                     />
+                    <p className="mt-1 text-[12px] text-[#7a7a7a]">
+                      Demo password: <span className="font-medium">123456</span>
+                    </p>
                   </div>
+                  {emailError ? (
+                    <p className="text-[13px] font-medium text-[#c14747]">{emailError}</p>
+                  ) : null}
                   <button
                     type="submit"
                     className="mt-2 w-full cursor-pointer rounded-xl bg-[#9ea600] py-3.5 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(158,166,0,0.35)] transition-[transform,box-shadow] hover:bg-[#8f9500] hover:shadow-[0_6px_20px_rgba(158,166,0,0.4)] active:scale-[0.99]"
@@ -374,7 +418,13 @@ export function LoginModal() {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
                     const phone = String(formData.get("phone") ?? "");
-                    loginWithPhone(phone);
+                    const otp = String(formData.get("otp") ?? "");
+                    const success = loginWithPhone(phone, otp);
+                    setPhoneError(
+                      success
+                        ? ""
+                        : "Invalid phone login. Use 9876543210 and OTP 123456"
+                    );
                   }}
                 >
                   <div>
@@ -401,6 +451,9 @@ export function LoginModal() {
                     <p className="mt-2 text-[13px] text-[#888]">
                       We’ll text you a one-time code to verify it’s you.
                     </p>
+                    <p className="mt-1 text-[12px] text-[#7a7a7a]">
+                      Demo phone: <span className="font-medium">9876543210</span>
+                    </p>
                   </div>
                   <div>
                     <label
@@ -419,7 +472,13 @@ export function LoginModal() {
                       maxLength={6}
                       className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] tracking-[0.25em] text-[#222] outline-none transition-[border-color,box-shadow] placeholder:text-[#9a9a9a] placeholder:tracking-normal focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
                     />
+                    <p className="mt-1 text-[12px] text-[#7a7a7a]">
+                      Demo OTP: <span className="font-medium">123456</span>
+                    </p>
                   </div>
+                  {phoneError ? (
+                    <p className="text-[13px] font-medium text-[#c14747]">{phoneError}</p>
+                  ) : null}
                   <div className="flex gap-3">
                     <button
                       type="button"
