@@ -18,10 +18,21 @@ const dancingAccent = Dancing_Script({
 
 type LoginTab = "email" | "phone";
 
+type AuthUser = {
+  name: string;
+  email: string;
+  initials: string;
+};
+
 type LoginModalContextValue = {
   open: boolean;
   openLogin: () => void;
   closeLogin: () => void;
+  isLoggedIn: boolean;
+  user: AuthUser | null;
+  loginWithEmail: (email: string) => void;
+  loginWithPhone: (phone: string) => void;
+  logout: () => void;
 };
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
@@ -36,14 +47,69 @@ export function useLoginModal() {
 
 export function LoginModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const openLogin = useCallback(() => setOpen(true), []);
   const closeLogin = useCallback(() => setOpen(false), []);
+  const logout = useCallback(() => setUser(null), []);
+
+  const createUserFromIdentity = useCallback((identity: string) => {
+    const safeIdentity = identity.trim();
+    const fallbackName = "Katyayani Shopper";
+    const nameBase = safeIdentity.includes("@")
+      ? safeIdentity.split("@")[0]
+      : safeIdentity;
+    const words = nameBase
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+    const prettyName =
+      words.length > 0
+        ? words
+            .slice(0, 2)
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ")
+        : fallbackName;
+    const initials =
+      words.length > 0
+        ? words
+            .slice(0, 2)
+            .map((word) => word.charAt(0).toUpperCase())
+            .join("")
+        : "KS";
+
+    return {
+      name: prettyName,
+      email: safeIdentity.includes("@") ? safeIdentity : "shopper@katyayani.com",
+      initials,
+    };
+  }, []);
+
+  const loginWithEmail = useCallback(
+    (email: string) => {
+      setUser(createUserFromIdentity(email || "shopper@katyayani.com"));
+      setOpen(false);
+    },
+    [createUserFromIdentity]
+  );
+
+  const loginWithPhone = useCallback(
+    (phone: string) => {
+      setUser(createUserFromIdentity(phone || "Katyayani Shopper"));
+      setOpen(false);
+    },
+    [createUserFromIdentity]
+  );
 
   const value: LoginModalContextValue = {
     open,
     openLogin,
     closeLogin,
+    isLoggedIn: Boolean(user),
+    user,
+    loginWithEmail,
+    loginWithPhone,
+    logout,
   };
 
   return (
@@ -107,7 +173,7 @@ function PhoneIcon({ className }: { className?: string }) {
 }
 
 export function LoginModal() {
-  const { open, closeLogin } = useLoginModal();
+  const { open, closeLogin, loginWithEmail, loginWithPhone } = useLoginModal();
   const titleId = useId();
   const descriptionId = useId();
   const [tab, setTab] = useState<LoginTab>("email");
@@ -244,7 +310,12 @@ export function LoginModal() {
                   role="tabpanel"
                   aria-labelledby="login-tab-email"
                   className="space-y-4"
-                  onSubmit={(e) => e.preventDefault()}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const email = String(formData.get("email") ?? "");
+                    loginWithEmail(email);
+                  }}
                 >
                   <div>
                     <label
@@ -299,7 +370,12 @@ export function LoginModal() {
                   role="tabpanel"
                   aria-labelledby="login-tab-phone"
                   className="space-y-4"
-                  onSubmit={(e) => e.preventDefault()}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const phone = String(formData.get("phone") ?? "");
+                    loginWithPhone(phone);
+                  }}
                 >
                   <div>
                     <label
