@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useCartSidebar } from "./CartSidebar";
 import { useLoginModal } from "./LoginModal";
 import { useSearchSidebar } from "./SearchSidebar";
@@ -84,9 +85,30 @@ function ChevronDownIcon() {
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { open: searchOpen, openSearch, closeSearch } = useSearchSidebar();
   const { open: cartOpen, openCart, closeCart, itemCount } = useCartSidebar();
-  const { openLogin } = useLoginModal();
+  const { openLogin, isLoggedIn, user, logout } = useLoginModal();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProfileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [profileMenuOpen]);
 
   if (pathname === "/checkout") {
     return null;
@@ -103,7 +125,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-10 text-[18px] text-[#2f2f2f] lg:flex">
-          {navItems.map((item) => (
+          {navItems.map((item) =>
             item.label === "Catalog" ? (
               <div key={item.label} className="group relative">
                 <button
@@ -140,8 +162,8 @@ export default function Header() {
               >
                 {item.label}
               </Link>
-            )
-          ))}
+            ),
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-6 text-[#222]">
@@ -180,18 +202,86 @@ export default function Header() {
             </span>
           </button>
 
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            className="h-13 rounded-none bg-[#9ea600] px-9 text-[19px] font-medium text-white ml-2 cursor-pointer transition-[filter] hover:brightness-105 active:brightness-95"
-            onClick={() => {
-              closeSearch();
-              closeCart();
-              openLogin();
-            }}
-          >
-            Login
-          </button>
+          {isLoggedIn && user ? (
+            <div className="relative ml-2" ref={profileMenuRef}>
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                className="flex cursor-pointer items-center gap-3 rounded-full border border-[#e5e7d9] bg-[#f9faef] px-3 py-1.5 text-[#2a2a2a] transition-colors hover:bg-[#f1f3de]"
+                onClick={() => setProfileMenuOpen((prev) => !prev)}
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-[#9ea600] text-sm font-semibold text-white">
+                  {user.initials}
+                </span>
+                <span className="hidden max-w-[120px] truncate text-[15px] font-medium lg:block">
+                  {user.name}
+                </span>
+              </button>
+
+              <div
+                className={`absolute right-0 top-full z-30 mt-3 w-[220px] rounded-2xl border border-[#eceee0] bg-white p-2 shadow-[0_16px_36px_rgba(0,0,0,0.12)] transition-all duration-200 ${
+                  profileMenuOpen
+                    ? "pointer-events-auto translate-y-0 opacity-100"
+                    : "pointer-events-none -translate-y-1 opacity-0"
+                }`}
+                role="menu"
+              >
+                <div className="mb-1 border-b border-[#f1f1ea] px-3 pb-2 pt-1">
+                  <p className="text-[13px] text-[#6b6b6b]">Signed in as</p>
+                  <p className="truncate text-[14px] font-medium text-[#222]">
+                    {user.email}
+                  </p>
+                </div>
+                <Link
+                  href="/account/profile"
+                  className="block rounded-xl px-3 py-2.5 text-[15px] text-[#2f2f2f] transition-colors hover:bg-[#f7f8ec]"
+                  role="menuitem"
+                >
+                  Profile
+                </Link>
+                <Link
+                  href="/account/settings"
+                  className="block rounded-xl px-3 py-2.5 text-[15px] text-[#2f2f2f] transition-colors hover:bg-[#f7f8ec]"
+                  role="menuitem"
+                >
+                  Settings
+                </Link>
+                <Link
+                  href="/account/my-orders"
+                  className="block rounded-xl px-3 py-2.5 text-[15px] text-[#2f2f2f] transition-colors hover:bg-[#f7f8ec]"
+                  role="menuitem"
+                >
+                  My Orders
+                </Link>
+                <button
+                  type="button"
+                  className="mt-1 block w-full cursor-pointer rounded-xl px-3 py-2.5 text-left text-[15px] text-[#c14747] transition-colors hover:bg-[#fff2f2]"
+                  role="menuitem"
+                  onClick={() => {
+                    logout();
+                    setProfileMenuOpen(false);
+                    router.push("/");
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              className="h-13 rounded-none bg-[#9ea600] px-9 text-[19px] font-medium text-white ml-2 cursor-pointer transition-[filter] hover:brightness-105 active:brightness-95"
+              onClick={() => {
+                closeSearch();
+                closeCart();
+                openLogin();
+              }}
+            >
+              Login
+            </button>
+          )}
         </div>
       </div>
     </header>

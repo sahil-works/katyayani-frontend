@@ -6,7 +6,18 @@ import { useSearchParams } from "next/navigation";
 import { ChevronDown, LayoutGrid, List } from "lucide-react";
 import { useMemo, useState } from "react";
 
-const products = [
+interface Product {
+  id: number;
+  slug: string;
+  title: string;
+  price: string;
+  amount: number;
+  createdAt: string;
+  image: string;
+  category: string;
+}
+
+const products: Product[] = [
   {
     id: 1,
     slug: "mul-cotton-chanderi-unstitched-suits",
@@ -99,7 +110,7 @@ const categoryLabels = {
 
 const PRICE_MAX = 9495;
 
-function formatInr(amount) {
+function formatInr(amount: number) {
   return amount.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -110,8 +121,8 @@ export default function NewArrivalsContent() {
   const searchParams = useSearchParams();
   const selectedCategory = searchParams.get("category");
   const selectedCategoryLabel =
-    selectedCategory && categoryLabels[selectedCategory]
-      ? categoryLabels[selectedCategory]
+    selectedCategory && selectedCategory in categoryLabels
+      ? categoryLabels[selectedCategory as keyof typeof categoryLabels]
       : "Organza Suits";
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("date-desc");
@@ -125,13 +136,15 @@ export default function NewArrivalsContent() {
 
     if (sortBy === "date-desc") {
       return clonedProducts.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     }
 
     if (sortBy === "date-asc") {
       return clonedProducts.sort(
-        (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
@@ -161,7 +174,9 @@ export default function NewArrivalsContent() {
             Home
           </Link>
           <span className="mx-2 text-[#9c9c9c]">/</span>
-          <span className="tracking-[0.03em] uppercase">{selectedCategoryLabel}</span>
+          <span className="tracking-[0.03em] uppercase">
+            {selectedCategoryLabel}
+          </span>
         </div>
 
         <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
@@ -223,7 +238,11 @@ export default function NewArrivalsContent() {
                     setMinPrice(Number.parseInt(e.target.value, 10))
                   }
                   className="new-arrivals-range"
-                  style={{ "--range-progress": priceProgressPct }}
+                  style={
+                    {
+                      "--range-progress": priceProgressPct,
+                    } as React.CSSProperties
+                  }
                   aria-label="Minimum price"
                 />
               </div>
@@ -346,7 +365,9 @@ export default function NewArrivalsContent() {
                       </h3>
                       <p
                         className={`text-[20px] leading-none text-[#444] ${
-                          viewMode === "list" ? "mt-3 text-left" : "mt-4 text-center"
+                          viewMode === "list"
+                            ? "mt-3 text-left"
+                            : "mt-4 text-center"
                         }`}
                       >
                         {product.price}

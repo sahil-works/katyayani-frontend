@@ -1,7 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const collections = [
+interface Collection {
+  id: number;
+  title: string;
+  productsCount: number;
+  image: string;
+}
+
+const collections: Collection[] = [
   {
     id: 1,
     title: "New Arrivals",

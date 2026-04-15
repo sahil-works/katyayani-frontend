@@ -101,6 +101,13 @@ ul.slick-dots .slick-active span {
     0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
+/* Live shopping banner background */
+.live-shopping-banner {
+  background-image: url("/assets/images/sets.png");
+  background-size: cover;
+  background-position: center;
+}
+
 .new-arrivals-range::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 9999px;

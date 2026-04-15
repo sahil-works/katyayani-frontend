@@ -3,7 +3,6 @@
 import { Dancing_Script } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react";
 import { useCartSidebar } from "./CartSidebar";
 
 const dancingScript = Dancing_Script({
@@ -119,12 +118,6 @@ export default function NewArrivalsSection() {
                     height={385}
                     className="h-[380px] w-full object-cover"
                   />
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-3 right-3 grid h-7 w-7 place-items-center rounded-full bg-white text-[#ef4e4e] shadow-[0_2px_6px_rgba(0,0,0,0.15)]"
-                  >
-                    <Heart className="h-4 w-4" fill="currentColor" strokeWidth={1.8} />
-                  </span>
                 </div>
                 <h3 className="mt-3 line-clamp-1 text-[21px] text-[#1f1f1f]">
                   {product.title}
