@@ -3,22 +3,31 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useCartSidebar } from "./CartSidebar";
-import type { ProductDetail } from "../lib/productDetail";
+import type { ProductDetailViewModel } from "../lib/storefront/types/viewModels";
 
-export default function ProductPurchaseBar({ product }: { product: ProductDetail }) {
+export default function ProductPurchaseBar({ product }: { product: ProductDetailViewModel }) {
   const { addLine, openCart } = useCartSidebar();
   const [qty, setQty] = useState(1);
 
-  const imageSrc = product.images[0]?.src ?? "/assets/images/banner-one.png";
+  const variant = product.primaryVariant ?? product.variants.find((item) => item.inStock);
+  const image = variant?.images[0] ?? product.images[0] ?? product.image;
 
-  const handleAddToCart = () => {
-    addLine({
-      id: product.sku,
-      name: product.name,
-      subtitle: product.collectionLabel,
-      unitPrice: product.priceInr,
-      imageSrc,
+  const handleAddToCart = async () => {
+    if (!variant) return;
+
+    await addLine({
+      productId: product.id,
+      variantId: variant.id,
+      productTitle: product.title,
+      slug: product.slug,
+      category: product.category?.title,
+      variantTitle: variant.title,
+      effectivePrice: variant.price.effectivePrice,
+      image,
       quantity: qty,
+      inStock: variant.inStock,
+      available: variant.isActive,
+      stockLabel: variant.stockLabel,
     });
     openCart();
   };
@@ -55,8 +64,8 @@ export default function ProductPurchaseBar({ product }: { product: ProductDetail
 
         <button
           type="button"
-          onClick={handleAddToCart}
-          disabled={!product.inStock}
+          onClick={() => void handleAddToCart()}
+          disabled={!variant || !variant.inStock}
           className="h-12 flex-1 min-w-[200px] bg-[#9ea600] px-6 text-[14px] font-semibold tracking-[0.08em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 sm:max-w-none"
         >
           ADD TO CART

@@ -1,170 +1,98 @@
 "use client";
 
-import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { ChevronDown, LayoutGrid, List } from "lucide-react";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, LayoutGrid, List, Search } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import {
+  categoriesQueryOptions,
+  productsQueryOptions,
+  type GetProductsParams,
+} from "../lib/api";
+import { ProductCard } from "./storefront/ProductCard";
+import {
+  StorefrontEmptyState,
+  StorefrontErrorState,
+  StorefrontSkeleton,
+} from "./storefront/AsyncStates";
 
-interface Product {
-  id: number;
-  slug: string;
-  title: string;
-  price: string;
-  amount: number;
-  createdAt: string;
-  image: string;
-  category: string;
+const PAGE_SIZE = 12;
+
+function readPositiveInteger(value: string | null, fallback: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-const products: Product[] = [
-  {
-    id: 1,
-    slug: "mul-cotton-chanderi-unstitched-suits",
-    title: "Brush Painted Floral Design Kurta",
-    price: "Rs. 3,550.00",
-    amount: 3550,
-    createdAt: "2026-04-04",
-    image: "/assets/images/banner-one.png",
-    category: "cotton-suits",
-  },
-  {
-    id: 2,
-    slug: "mul-cotton-chanderi-unstitched-pearl",
-    title: "Soft Organza Unstitched Suit",
-    price: "Rs. 4,350.00",
-    amount: 4350,
-    createdAt: "2026-04-06",
-    image: "/assets/images/banner-two.png",
-    category: "muslin-suits",
-  },
-  {
-    id: 3,
-    slug: "mul-chanderi-unstitched-suits",
-    title: "Soft Organza Unstitched Suit",
-    price: "Rs. 4,350.00",
-    amount: 4350,
-    createdAt: "2026-04-03",
-    image: "/assets/images/banner-one.png",
-    category: "organza-suits",
-  },
-  {
-    id: 4,
-    slug: "mirror-work-suit-set",
-    title: "Soft Organza Unstitched Suit",
-    price: "Rs. 4,350.00",
-    amount: 4350,
-    createdAt: "2026-04-05",
-    image: "/assets/images/banner-two.png",
-    category: "silk-collection",
-  },
-  {
-    id: 5,
-    slug: "silk-blend-festive-suit",
-    title: "Printed Organza Kurta Set",
-    price: "Rs. 3,950.00",
-    amount: 3950,
-    createdAt: "2026-04-02",
-    image: "/assets/images/banner-one.png",
-    category: "velvet-collection",
-  },
-  {
-    id: 6,
-    slug: "mul-cotton-chanderi-unstitched-suits",
-    title: "Floral Organza Party Suit",
-    price: "Rs. 4,650.00",
-    amount: 4650,
-    createdAt: "2026-04-01",
-    image: "/assets/images/banner-two.png",
-    category: "organza-suits",
-  },
-  {
-    id: 7,
-    slug: "mul-cotton-chanderi-unstitched-pearl",
-    title: "Chic Organza Embroidered Suit",
-    price: "Rs. 4,150.00",
-    amount: 4150,
-    createdAt: "2026-03-31",
-    image: "/assets/images/banner-one.png",
-    category: "cotton-suits",
-  },
-  {
-    id: 8,
-    slug: "mul-chanderi-unstitched-suits",
-    title: "Pastel Organza Straight Kurta",
-    price: "Rs. 3,750.00",
-    amount: 3750,
-    createdAt: "2026-03-30",
-    image: "/assets/images/banner-two.png",
-    category: "muslin-suits",
-  },
-];
-
-const categoryLabels = {
-  "cotton-suits": "Cotton Suits",
-  "muslin-suits": "Muslin Suits",
-  "velvet-collection": "Velvet Collection",
-  "silk-collection": "Silk Collection",
-  "organza-suits": "Organza Suits",
-};
-
-const PRICE_MAX = 9495;
-
-function formatInr(amount: number) {
-  return amount.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+function cleanParam(value: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 export default function NewArrivalsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const selectedCategory = searchParams.get("category");
-  const selectedCategoryLabel =
-    selectedCategory && selectedCategory in categoryLabels
-      ? categoryLabels[selectedCategory as keyof typeof categoryLabels]
-      : "Organza Suits";
-  const [viewMode, setViewMode] = useState("grid");
-  const [sortBy, setSortBy] = useState("date-desc");
-  const [minPrice, setMinPrice] = useState(0);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [qDraft, setQDraft] = useState(searchParams.get("q") ?? "");
+  const [tagDraft, setTagDraft] = useState(searchParams.get("tag") ?? "");
 
-  const sortedProducts = useMemo(() => {
-    const filteredProducts = selectedCategory
-      ? products.filter((product) => product.category === selectedCategory)
-      : products;
-    const clonedProducts = [...filteredProducts];
+  const q = cleanParam(searchParams.get("q"));
+  const categoryId = cleanParam(searchParams.get("categoryId"));
+  const tag = cleanParam(searchParams.get("tag"));
+  const page = readPositiveInteger(searchParams.get("page"), 1);
 
-    if (sortBy === "date-desc") {
-      return clonedProducts.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-    }
+  const productParams = useMemo<GetProductsParams>(
+    () => ({
+      page,
+      limit: PAGE_SIZE,
+      q,
+      categoryId,
+      tag,
+    }),
+    [categoryId, page, q, tag],
+  );
 
-    if (sortBy === "date-asc") {
-      return clonedProducts.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    }
+  const productsQuery = useQuery(productsQueryOptions(productParams));
+  const categoriesQuery = useQuery(categoriesQueryOptions());
 
-    if (sortBy === "price-asc") {
-      return clonedProducts.sort((a, b) => a.amount - b.amount);
-    }
+  const selectedCategory = categoriesQuery.data?.find(
+    (category) => category.id === categoryId,
+  );
+  const heading = selectedCategory?.title ?? tag ?? q ?? "New Arrivals";
+  const products = productsQuery.data?.items ?? [];
+  const pagination = productsQuery.data?.pagination;
 
-    if (sortBy === "price-desc") {
-      return clonedProducts.sort((a, b) => b.amount - a.amount);
-    }
+  function updateFilters(updates: Record<string, string | undefined>) {
+    const params = new URLSearchParams(searchParams.toString());
 
-    if (sortBy === "title-asc") {
-      return clonedProducts.sort((a, b) => a.title.localeCompare(b.title));
-    }
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
 
-    return clonedProducts;
-  }, [sortBy, selectedCategory]);
+    params.delete("page");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
-  const priceProgressPct =
-    PRICE_MAX > 0 ? `${(minPrice / PRICE_MAX) * 100}%` : "0%";
+  function goToPage(nextPage: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(nextPage));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: true });
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    updateFilters({ q: qDraft.trim() || undefined });
+  }
+
+  function handleTagSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    updateFilters({ tag: tagDraft.trim() || undefined });
+  }
 
   return (
     <main className="min-h-[calc(100vh-96px)] bg-white">
@@ -174,13 +102,11 @@ export default function NewArrivalsContent() {
             Home
           </Link>
           <span className="mx-2 text-[#9c9c9c]">/</span>
-          <span className="tracking-[0.03em] uppercase">
-            {selectedCategoryLabel}
-          </span>
+          <span className="tracking-[0.03em] uppercase">{heading}</span>
         </div>
 
         <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
-          {selectedCategoryLabel.toUpperCase()}
+          {heading.toUpperCase()}
         </h1>
 
         <section className="mt-16 grid gap-10 lg:grid-cols-[300px_1fr]">
@@ -189,85 +115,115 @@ export default function NewArrivalsContent() {
               Filter
             </h2>
 
-            <div className="mt-7 border-t border-[#ececec] pt-6">
-              <button
-                type="button"
-                className="flex w-full items-center text-left text-[18px] leading-none font-medium text-[#242424]"
+            <form onSubmit={handleSearchSubmit} className="mt-7">
+              <label
+                htmlFor="catalog-q"
+                className="mb-2 block text-[14px] font-medium text-[#555]"
               >
-                <span>Availability</span>
-              </button>
-
-              <div className="mt-5 space-y-3.5 text-[15px] text-[#4a4a4a]">
-                <label className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    className="new-arrivals-checkbox h-4 w-4"
-                  />
-                  <span>In stock (164)</span>
-                </label>
-                <label className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    className="new-arrivals-checkbox h-4 w-4"
-                  />
-                  <span>Out of stock (500)</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="mt-8 border-y border-[#ececec] py-6">
-              <button
-                type="button"
-                className="flex w-full items-center text-left text-[18px] leading-none font-medium text-[#242424]"
-              >
-                <span>Price</span>
-              </button>
-
-              <div className="new-arrivals-range-wrap mt-6">
-                <div className="mb-2 flex justify-between text-[12px] font-medium tracking-wide text-[#888] uppercase">
-                  <span>Min</span>
-                  <span>Max</span>
-                </div>
+                Search products
+              </label>
+              <div className="flex overflow-hidden rounded-lg border border-[#dedede] bg-white">
                 <input
-                  type="range"
-                  min="0"
-                  max={PRICE_MAX}
-                  step="50"
-                  value={minPrice}
-                  onChange={(e) =>
-                    setMinPrice(Number.parseInt(e.target.value, 10))
-                  }
-                  className="new-arrivals-range"
-                  style={
-                    {
-                      "--range-progress": priceProgressPct,
-                    } as React.CSSProperties
-                  }
-                  aria-label="Minimum price"
+                  id="catalog-q"
+                  value={qDraft}
+                  onChange={(event) => setQDraft(event.target.value)}
+                  placeholder="Search..."
+                  className="min-w-0 flex-1 px-3 py-2.5 text-[15px] outline-none"
                 />
+                <button
+                  type="submit"
+                  aria-label="Search catalog"
+                  className="grid w-11 place-items-center bg-[#9ea600] text-white"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
               </div>
+            </form>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-[#e8e8e8] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition-shadow hover:shadow-[0_2px_8px_rgba(158,166,0,0.12)]">
-                  <div className="text-[11px] font-medium tracking-[0.06em] text-[#9a9a9a] uppercase">
-                    From
-                  </div>
-                  <div className="mt-1 flex items-baseline gap-1 text-[15px] font-medium text-[#2d2d2d] tabular-nums">
-                    <span className="text-[#9ea600]">₹</span>
-                    <span>{formatInr(minPrice)}</span>
-                  </div>
-                </div>
-                <div className="rounded-lg border border-[#e8e8e8] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
-                  <div className="text-[11px] font-medium tracking-[0.06em] text-[#9a9a9a] uppercase">
-                    To
-                  </div>
-                  <div className="mt-1 flex items-baseline gap-1 text-[15px] font-medium text-[#2d2d2d] tabular-nums">
-                    <span className="text-[#9ea600]">₹</span>
-                    <span>{formatInr(PRICE_MAX)}</span>
-                  </div>
-                </div>
-              </div>
+            <div className="mt-7 border-t border-[#ececec] pt-6">
+              <label
+                htmlFor="catalog-category"
+                className="mb-2 block text-[18px] leading-none font-medium text-[#242424]"
+              >
+                Category
+              </label>
+              {categoriesQuery.isLoading ? (
+                <StorefrontSkeleton rows={3} label="Loading categories" />
+              ) : categoriesQuery.isError ? (
+                <StorefrontErrorState
+                  error={categoriesQuery.error}
+                  title="Could not load categories"
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => categoriesQuery.refetch()}
+                      className="text-[14px] font-semibold text-[#8a2f2f] underline"
+                    >
+                      Retry
+                    </button>
+                  }
+                />
+              ) : (
+                <select
+                  id="catalog-category"
+                  value={categoryId ?? ""}
+                  onChange={(event) =>
+                    updateFilters({
+                      categoryId: event.target.value || undefined,
+                    })
+                  }
+                  className="h-11 w-full rounded-md border border-[#d9d9d9] bg-white px-3 text-[15px] outline-none focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/20"
+                >
+                  <option value="">All categories</option>
+                  {categoriesQuery.data?.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.title}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
+
+            <form
+              onSubmit={handleTagSubmit}
+              className="mt-7 border-t border-[#ececec] pt-6"
+            >
+              <label
+                htmlFor="catalog-tag"
+                className="mb-2 block text-[18px] leading-none font-medium text-[#242424]"
+              >
+                Tag
+              </label>
+              <div className="flex overflow-hidden rounded-md border border-[#d9d9d9] bg-white">
+                <input
+                  id="catalog-tag"
+                  value={tagDraft}
+                  onChange={(event) => setTagDraft(event.target.value)}
+                  placeholder="e.g. new-arrivals"
+                  className="h-11 min-w-0 flex-1 px-3 text-[15px] outline-none"
+                />
+                <button
+                  type="submit"
+                  className="bg-[#2f2f2f] px-3 text-[13px] font-semibold text-white"
+                >
+                  Apply
+                </button>
+              </div>
+            </form>
+
+            {(q || categoryId || tag) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQDraft("");
+                  setTagDraft("");
+                  router.replace(pathname, { scroll: false });
+                }}
+                className="mt-6 text-[14px] font-medium text-[#6f7600] underline underline-offset-2"
+              >
+                Clear filters
+              </button>
+            ) : null}
           </aside>
 
           <div>
@@ -301,82 +257,82 @@ export default function NewArrivalsContent() {
 
               <div className="flex flex-wrap items-center gap-7 text-[18px] text-[#5a5a5a]">
                 <div className="flex items-center gap-2">
-                  <span>Sort By:</span>
-                  <div className="group relative">
-                    <select
-                      value={sortBy}
-                      onChange={(event) => setSortBy(event.target.value)}
-                      className="h-11 min-w-[210px] appearance-none rounded-md border border-[#d9d9d9] bg-white pl-4 pr-10 text-[16px] text-[#2f2f2f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all outline-none hover:border-[#bfbfbf] focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/20"
-                      aria-label="Sort products"
-                    >
-                      <option value="date-desc">Date, new to old</option>
-                      <option value="date-asc">Date, old to new</option>
-                      <option value="price-asc">Price, low to high</option>
-                      <option value="price-desc">Price, high to low</option>
-                      <option value="title-asc">Alphabetically, A-Z</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-[16px] w-[16px] -translate-y-1/2 text-[#747474] transition-colors group-hover:text-[#525252]" />
+                  <span>Source:</span>
+                  <div className="relative">
+                    <span className="inline-flex h-11 min-w-[170px] items-center rounded-md border border-[#d9d9d9] bg-white pl-4 pr-10 text-[16px] text-[#2f2f2f]">
+                      Backend catalog
+                    </span>
+                    <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-[16px] w-[16px] -translate-y-1/2 text-[#747474]" />
                   </div>
                 </div>
-                <span>{sortedProducts.length} Products</span>
+                <span>{pagination?.total ?? products.length} Products</span>
               </div>
             </div>
 
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3"
-                  : "grid grid-cols-1 gap-6 md:grid-cols-2"
-              }
-            >
-              {sortedProducts.map((product) => (
-                <article
-                  key={product.id}
+            {productsQuery.isLoading ? (
+              <StorefrontSkeleton rows={8} label="Loading products" />
+            ) : productsQuery.isError ? (
+              <StorefrontErrorState
+                error={productsQuery.error}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => productsQuery.refetch()}
+                    className="text-[14px] font-semibold text-[#8a2f2f] underline"
+                  >
+                    Retry
+                  </button>
+                }
+              />
+            ) : products.length === 0 ? (
+              <StorefrontEmptyState
+                title="No products found"
+                description="Try a different search, category, or tag."
+              />
+            ) : (
+              <>
+                <div
                   className={
-                    viewMode === "list"
-                      ? "flex flex-col gap-4 border border-[#efefef] p-4 sm:flex-row sm:items-center"
-                      : ""
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3"
+                      : "grid grid-cols-1 gap-6 md:grid-cols-2"
                   }
                 >
-                  <Link
-                    href={`/products/${product.slug}`}
-                    className={viewMode === "list" ? "contents" : "block"}
-                  >
-                    <Image
-                      src={product.image}
-                      alt={product.title}
-                      width={250}
-                      height={380}
-                      className={
-                        viewMode === "list"
-                          ? "h-[220px] w-full rounded-[14px] object-cover sm:w-[190px]"
-                          : "h-[380px] w-full rounded-[14px] object-cover"
-                      }
+                  {products.map((product, index) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      viewMode={viewMode}
+                      imagePriority={index < 3}
                     />
-                    <div className={viewMode === "list" ? "sm:text-left" : ""}>
-                      <h3
-                        className={`text-[20px] leading-[1.1] font-medium text-[#222] ${
-                          viewMode === "list"
-                            ? "mt-2 text-left"
-                            : "mt-5 text-center whitespace-nowrap overflow-hidden text-ellipsis"
-                        }`}
-                      >
-                        {product.title}
-                      </h3>
-                      <p
-                        className={`text-[20px] leading-none text-[#444] ${
-                          viewMode === "list"
-                            ? "mt-3 text-left"
-                            : "mt-4 text-center"
-                        }`}
-                      >
-                        {product.price}
-                      </p>
-                    </div>
-                  </Link>
-                </article>
-              ))}
-            </div>
+                  ))}
+                </div>
+
+                {pagination && pagination.totalPages > 1 ? (
+                  <div className="mt-10 flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      disabled={!pagination.hasPreviousPage}
+                      onClick={() => goToPage(Math.max(1, page - 1))}
+                      className="h-11 rounded-full border border-[#d8d8d8] px-5 text-[14px] font-semibold text-[#333] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-[14px] text-[#666]">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={!pagination.hasNextPage}
+                      onClick={() => goToPage(page + 1)}
+                      className="h-11 rounded-full border border-[#d8d8d8] px-5 text-[14px] font-semibold text-[#333] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
         </section>
       </div>

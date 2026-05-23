@@ -1,46 +1,25 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { Dancing_Script } from "next/font/google";
-import Image from "next/image";
 import Link from "next/link";
+import { categoriesQueryOptions } from "../lib/api";
+import {
+  StorefrontEmptyState,
+  StorefrontErrorState,
+  StorefrontSkeleton,
+} from "./storefront/AsyncStates";
+import { StorefrontImage } from "./storefront/StorefrontImage";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
 
-const categories = [
-  {
-    id: 1,
-    title: "Cotton Suits",
-    image: "/assets/images/banner-one.png",
-    slug: "cotton-suits",
-  },
-  {
-    id: 2,
-    title: "Muslin Suits",
-    image: "/assets/images/banner-two.png",
-    slug: "muslin-suits",
-  },
-  {
-    id: 3,
-    title: "Velvet Collection",
-    image: "/assets/images/banner-one.png",
-    slug: "velvet-collection",
-  },
-  {
-    id: 4,
-    title: "Silk Collection",
-    image: "/assets/images/banner-two.png",
-    slug: "silk-collection",
-  },
-  {
-    id: 5,
-    title: "Organza Suits",
-    image: "/assets/images/banner-one.png",
-    slug: "organza-suits",
-  },
-];
-
 export default function ShopByCategoriesSection() {
+  const categoriesQuery = useQuery(categoriesQueryOptions());
+  const categories = categoriesQuery.data ?? [];
+
   return (
     <section className="bg-[#eeeee9] py-14">
       <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
@@ -58,30 +37,59 @@ export default function ShopByCategoriesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-5 lg:gap-x-5">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              href={`/new-arrivals?category=${category.slug}`}
-              className="group block text-center"
-            >
-              <article>
-                <div className="overflow-hidden rounded-[16px]">
-                  <Image
-                    src={category.image}
-                    alt={category.title}
-                    width={245}
-                    height={180}
-                    className="h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <h3 className="mt-3 text-[21px] leading-none text-[#111] transition-colors group-hover:text-[#9ea600]">
-                  {category.title}
-                </h3>
-              </article>
-            </Link>
-          ))}
-        </div>
+        {categoriesQuery.isLoading ? (
+          <StorefrontSkeleton rows={5} label="Loading categories" />
+        ) : categoriesQuery.isError ? (
+          <StorefrontErrorState
+            error={categoriesQuery.error}
+            title="Could not load categories"
+            action={
+              <button
+                type="button"
+                onClick={() => categoriesQuery.refetch()}
+                className="text-[14px] font-semibold text-[#8a2f2f] underline"
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : categories.length === 0 ? (
+          <StorefrontEmptyState
+            title="No categories found"
+            description="Categories will appear here once they are active in the catalog."
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-5 lg:gap-x-5">
+            {categories.slice(0, 5).map((category, index) => (
+              <Link
+                key={category.id}
+                href={`/new-arrivals?categoryId=${encodeURIComponent(category.id)}`}
+                className="group block text-center"
+              >
+                <article>
+                  <div className="overflow-hidden rounded-[16px] bg-[#f7f7f5]">
+                    <StorefrontImage
+                      image={category.image}
+                      width={245}
+                      height={180}
+                      priority={index < 3}
+                      sizes="(min-width: 1024px) 245px, (min-width: 768px) 33vw, 50vw"
+                      className="h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <h3 className="mt-3 text-[21px] leading-none text-[#111] transition-colors group-hover:text-[#9ea600]">
+                    {category.title}
+                  </h3>
+                  {typeof category.productCount === "number" ? (
+                    <p className="mt-1 text-[14px] text-[#888]">
+                      {category.productCount} products
+                    </p>
+                  ) : null}
+                </article>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

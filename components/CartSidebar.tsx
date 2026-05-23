@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
   createContext,
@@ -13,32 +12,58 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  addCartItem,
+  clearMyCart,
+  getMyCart,
+  removeCartItem,
+  updateCartItemQuantity,
+} from "../lib/api/cart";
+import { getApiErrorMessage } from "../lib/api/errors";
+import type {
+  AddCartLineInput,
+  CartLineIdentity,
+  CartLineViewModel,
+  CartViewModel,
+} from "../lib/cart/types";
+import { formatCurrency } from "../lib/storefront/commerce";
+import { useAuth } from "../providers/AuthProvider";
+import { StorefrontImage } from "./storefront/StorefrontImage";
 
-export type CartLine = {
-  id: string;
-  name: string;
-  subtitle?: string;
-  /** Price for one unit in INR */
-  unitPrice: number;
-  quantity: number;
-  imageSrc: string;
-};
+type CartMode = "guest" | "authenticated";
 
 type CartSidebarContextValue = {
   open: boolean;
   openCart: () => void;
   closeCart: () => void;
-  lines: CartLine[];
+  mode: CartMode;
+  lines: CartLineViewModel[];
+  invalidLines: CartLineViewModel[];
   itemCount: number;
   subtotal: number;
-  addLine: (line: Omit<CartLine, "quantity"> & { quantity?: number }) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  removeLine: (id: string) => void;
-  clearCart: () => void;
+  formattedSubtotal: string;
+  hasInvalidItems: boolean;
+  isLoading: boolean;
+  error: string;
+  replayMessage: string;
+  addLine: (line: AddCartLineInput) => Promise<void>;
+  updateQuantity: (line: CartLineIdentity, quantity: number) => Promise<void>;
+  removeLine: (line: CartLineIdentity) => Promise<void>;
+  clearCart: () => Promise<void>;
+  refreshCart: () => Promise<void>;
 };
 
 const CartSidebarContext = createContext<CartSidebarContextValue | null>(null);
-const CART_STORAGE_KEY = "katyayani_cart_lines_v1";
+const GUEST_CART_STORAGE_KEY = "katyayani_guest_cart_lines_v2";
+
+const EMPTY_CART: CartViewModel = {
+  lines: [],
+  invalidLines: [],
+  itemCount: 0,
+  subtotal: 0,
+  formattedSubtotal: formatCurrency(0),
+  hasInvalidItems: false,
+};
 
 export function useCartSidebar() {
   const ctx = useContext(CartSidebarContext);
@@ -48,88 +73,64 @@ export function useCartSidebar() {
   return ctx;
 }
 
-function formatInr(value: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
+function toLineId(line: CartLineIdentity) {
+  return `${line.productId}:${line.variantId}`;
 }
 
-function CloseIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
+function normalizeGuestCart(lines: CartLineViewModel[]): CartViewModel {
+  const subtotal = lines.reduce((sum, line) => sum + line.lineSubtotal, 0);
+
+  return {
+    lines,
+    invalidLines: [],
+    itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
+    subtotal,
+    formattedSubtotal: formatCurrency(subtotal),
+    hasInvalidItems: false,
+  };
 }
 
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <path d="m22 4-10 10-4-4" />
-    </svg>
-  );
+function createGuestLine(input: AddCartLineInput): CartLineViewModel {
+  const quantity = Math.max(1, Math.floor(input.quantity));
+  const lineSubtotal = input.effectivePrice * quantity;
+
+  return {
+    id: toLineId(input),
+    productId: input.productId,
+    variantId: input.variantId,
+    productTitle: input.productTitle,
+    slug: input.slug,
+    category: input.category,
+    variantTitle: input.variantTitle,
+    image: input.image,
+    quantity,
+    effectivePrice: input.effectivePrice,
+    formattedEffectivePrice: formatCurrency(input.effectivePrice),
+    lineSubtotal,
+    formattedLineSubtotal: formatCurrency(lineSubtotal),
+    inStock: input.inStock,
+    available: input.available,
+    stockLabel: input.stockLabel,
+  };
 }
 
-function AddedToBagToast({
-  toast,
-}: {
-  toast: { id: number; name: string } | null;
-}) {
-  if (!toast) return null;
+function readGuestCartFromStorage() {
+  try {
+    const raw = window.localStorage.getItem(GUEST_CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as CartLineViewModel[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
-  const label =
-    toast.name.length > 52 ? `${toast.name.slice(0, 51)}…` : toast.name;
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      className="pointer-events-none fixed bottom-6 left-1/2 z-[200] w-[min(calc(100%-1.5rem),28rem)] -translate-x-1/2"
-    >
-      <div
-        key={toast.id}
-        className="cart-toast-in flex items-start gap-3 rounded-2xl border border-[#e4e8cc] bg-white px-4 py-3.5 shadow-[0_12px_44px_rgba(0,0,0,0.14)]"
-      >
-        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f2f5e4] text-[#9ea600]">
-          <CheckCircleIcon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9ea600]">
-            Added to bag
-          </p>
-          <p
-            className="mt-1 line-clamp-2 text-[15px] font-medium leading-snug text-[#2f2f2f]"
-            title={toast.name}
-          >
-            {label}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+function writeGuestCartToStorage(lines: CartLineViewModel[]) {
+  try {
+    window.localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(lines));
+  } catch {
+    // Storage can fail in private windows; the in-memory cart still works.
+  }
 }
 
 function EmptyCartIllustration({ className }: { className?: string }) {
@@ -148,125 +149,335 @@ function EmptyCartIllustration({ className }: { className?: string }) {
       <path d="M28 42h64M38 24h36" className="text-[#c5c9b0]" />
       <circle cx="44" cy="96" r="3" className="text-[#9ea600]" fill="currentColor" stroke="none" />
       <circle cx="76" cy="96" r="3" className="text-[#9ea600]" fill="currentColor" stroke="none" />
-      <path
-        d="M52 56c0 8 4 14 8 14s8-6 8-14"
-        className="text-[#9ea600]"
-        strokeWidth="2"
-      />
+      <path d="M52 56c0 8 4 14 8 14s8-6 8-14" className="text-[#9ea600]" strokeWidth="2" />
     </svg>
   );
 }
 
 export function CartSidebarProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, status } = useAuth();
   const [open, setOpen] = useState(false);
-  const [lines, setLines] = useState<CartLine[]>(() => {
-    try {
-      const raw = window.localStorage.getItem(CART_STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as CartLine[];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
-  const [addedToast, setAddedToast] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-  const toastIdRef = useRef(0);
-  const toastHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [guestLines, setGuestLines] = useState<CartLineViewModel[]>([]);
+  const [backendCart, setBackendCart] = useState<CartViewModel>(EMPTY_CART);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [replayMessage, setReplayMessage] = useState("");
+  const [hasHydratedGuestCart, setHasHydratedGuestCart] = useState(false);
+  const hasReplayedRef = useRef(false);
+
+  const mode: CartMode = isAuthenticated ? "authenticated" : "guest";
+  const guestCart = useMemo(() => normalizeGuestCart(guestLines), [guestLines]);
+  const activeCart = mode === "authenticated" ? backendCart : guestCart;
 
   const openCart = useCallback(() => setOpen(true), []);
   const closeCart = useCallback(() => setOpen(false), []);
 
-  const itemCount = useMemo(
-    () => lines.reduce((n, line) => n + line.quantity, 0),
-    [lines],
-  );
+  useEffect(() => {
+    if (hasHydratedGuestCart) return;
+    setGuestLines(readGuestCartFromStorage());
+    setHasHydratedGuestCart(true);
+  }, [hasHydratedGuestCart]);
 
-  const subtotal = useMemo(
-    () => lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
-    [lines],
-  );
+  useEffect(() => {
+    if (!hasHydratedGuestCart || mode !== "guest") return;
+    writeGuestCartToStorage(guestLines);
+  }, [guestLines, hasHydratedGuestCart, mode]);
 
-  const addLine = useCallback(
-    (line: Omit<CartLine, "quantity"> & { quantity?: number }) => {
-      const qty = line.quantity ?? 1;
-      setLines((prev) => {
-        const existing = prev.find((l) => l.id === line.id);
-        if (existing) {
-          return prev.map((l) =>
-            l.id === line.id
-              ? { ...l, quantity: l.quantity + qty }
-              : l,
-          );
-        }
-        return [...prev, { ...line, quantity: qty }];
-      });
+  const refreshCart = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      setBackendCart(await getMyCart());
+    } catch (cartError) {
+      setError(getApiErrorMessage(cartError));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
 
-      if (toastHideRef.current) {
-        clearTimeout(toastHideRef.current);
-      }
-      toastIdRef.current += 1;
-      setAddedToast({ id: toastIdRef.current, name: line.name });
-      toastHideRef.current = setTimeout(() => {
-        setAddedToast(null);
-        toastHideRef.current = null;
-      }, 3200);
-    },
-    [],
-  );
-
-  const updateQuantity = useCallback((id: string, quantity: number) => {
-    if (quantity < 1) {
-      setLines((prev) => prev.filter((l) => l.id !== id));
+  useEffect(() => {
+    if (status !== "authenticated" || !hasHydratedGuestCart) return;
+    if (hasReplayedRef.current) {
+      void refreshCart();
       return;
     }
-    setLines((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, quantity } : l)),
-    );
-  }, []);
 
-  const removeLine = useCallback((id: string) => {
-    setLines((prev) => prev.filter((l) => l.id !== id));
-  }, []);
+    hasReplayedRef.current = true;
+    let cancelled = false;
 
-  const clearCart = useCallback(() => setLines([]), []);
+    async function replayGuestCart() {
+      setIsLoading(true);
+      setReplayMessage("");
+      setError("");
+      const failedLines: CartLineViewModel[] = [];
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(lines));
-    } catch {
-      // Ignore write errors.
-    }
-  }, [lines]);
+      try {
+        for (const line of guestLines) {
+          try {
+            await addCartItem({
+              productId: line.productId,
+              variantId: line.variantId,
+              quantity: line.quantity,
+              productTitle: line.productTitle,
+              slug: line.slug,
+              category: line.category,
+              variantTitle: line.variantTitle,
+              image: line.image,
+              effectivePrice: line.effectivePrice,
+              inStock: line.inStock,
+              available: line.available,
+              stockLabel: line.stockLabel,
+            });
+          } catch {
+            failedLines.push(line);
+          }
+        }
 
-  useEffect(() => {
-    return () => {
-      if (toastHideRef.current) {
-        clearTimeout(toastHideRef.current);
+        if (cancelled) return;
+
+        setBackendCart(await getMyCart());
+        setGuestLines(failedLines);
+        writeGuestCartToStorage(failedLines);
+        setReplayMessage(
+          failedLines.length > 0
+            ? "Some guest cart items could not be synced. They remain in your guest cart."
+            : "",
+        );
+      } catch (cartError) {
+        if (!cancelled) setError(getApiErrorMessage(cartError));
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
+    }
+
+    void replayGuestCart();
+
+    return () => {
+      cancelled = true;
     };
-  }, []);
+  }, [guestLines, hasHydratedGuestCart, refreshCart, status]);
+
+  useEffect(() => {
+    if (status === "guest") {
+      hasReplayedRef.current = false;
+      setBackendCart(EMPTY_CART);
+    }
+  }, [status]);
+
+  const addLine = useCallback(
+    async (input: AddCartLineInput) => {
+      setError("");
+
+      if (!isAuthenticated) {
+        setGuestLines((prev) => {
+          const id = toLineId(input);
+          const existing = prev.find((line) => line.id === id);
+          if (!existing) return [...prev, createGuestLine(input)];
+
+          return prev.map((line) => {
+            if (line.id !== id) return line;
+            const quantity = line.quantity + Math.max(1, input.quantity);
+            const lineSubtotal = line.effectivePrice * quantity;
+            return {
+              ...line,
+              quantity,
+              lineSubtotal,
+              formattedLineSubtotal: formatCurrency(lineSubtotal),
+            };
+          });
+        });
+        return;
+      }
+
+      const existing = backendCart.lines.find(
+        (line) =>
+          line.productId === input.productId && line.variantId === input.variantId,
+      );
+      const quantity = (existing?.quantity ?? 0) + Math.max(1, input.quantity);
+      setIsLoading(true);
+      try {
+        setBackendCart(await addCartItem({ ...input, quantity }));
+      } catch (cartError) {
+        setError(getApiErrorMessage(cartError));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [backendCart.lines, isAuthenticated],
+  );
+
+  const updateQuantity = useCallback(
+    async (line: CartLineIdentity, quantity: number) => {
+      const normalizedQuantity = Math.max(0, Math.floor(quantity));
+      setError("");
+
+      if (!isAuthenticated) {
+        setGuestLines((prev) =>
+          normalizedQuantity < 1
+            ? prev.filter((item) => item.id !== toLineId(line))
+            : prev.map((item) => {
+                if (item.id !== toLineId(line)) return item;
+                const lineSubtotal = item.effectivePrice * normalizedQuantity;
+                return {
+                  ...item,
+                  quantity: normalizedQuantity,
+                  lineSubtotal,
+                  formattedLineSubtotal: formatCurrency(lineSubtotal),
+                };
+              }),
+        );
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        setBackendCart(
+          normalizedQuantity < 1
+            ? await removeCartItem(line)
+            : await updateCartItemQuantity({ ...line, quantity: normalizedQuantity }),
+        );
+      } catch (cartError) {
+        setError(getApiErrorMessage(cartError));
+        await refreshCart();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isAuthenticated, refreshCart],
+  );
+
+  const removeLine = useCallback(
+    async (line: CartLineIdentity) => {
+      await updateQuantity(line, 0);
+    },
+    [updateQuantity],
+  );
+
+  const clearCart = useCallback(async () => {
+    setError("");
+    if (!isAuthenticated) {
+      setGuestLines([]);
+      writeGuestCartToStorage([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      setBackendCart(await clearMyCart());
+    } catch (cartError) {
+      setError(getApiErrorMessage(cartError));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const value: CartSidebarContextValue = {
     open,
     openCart,
     closeCart,
-    lines,
-    itemCount,
-    subtotal,
+    mode,
+    lines: activeCart.lines,
+    invalidLines: activeCart.invalidLines,
+    itemCount: activeCart.itemCount,
+    subtotal: activeCart.subtotal,
+    formattedSubtotal: activeCart.formattedSubtotal,
+    hasInvalidItems: activeCart.hasInvalidItems,
+    isLoading,
+    error,
+    replayMessage,
     addLine,
     updateQuantity,
     removeLine,
     clearCart,
+    refreshCart,
   };
 
   return (
     <CartSidebarContext.Provider value={value}>
       {children}
-      <AddedToBagToast toast={addedToast} />
     </CartSidebarContext.Provider>
+  );
+}
+
+function CartLineRow({
+  line,
+  invalid,
+}: {
+  line: CartLineViewModel;
+  invalid?: boolean;
+}) {
+  const { updateQuantity, removeLine, isLoading } = useCartSidebar();
+  const href = line.slug ? `/products/${line.slug}` : "/collections";
+
+  return (
+    <li className="flex gap-4 border-b border-[#f5f5f5] pb-4 last:border-b-0 last:pb-0">
+      <Link
+        href={href}
+        className="relative h-[110px] w-[78px] shrink-0 overflow-hidden rounded-lg bg-[#f7f7f5]"
+      >
+        <StorefrontImage
+          image={line.image}
+          fill
+          sizes="78px"
+          className="object-cover"
+        />
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Link href={href} className="text-[15px] font-semibold leading-snug text-[#2f2f2f] hover:underline">
+          {line.productTitle}
+        </Link>
+        {line.category ? (
+          <p className="mt-0.5 text-[13px] text-[#888]">{line.category}</p>
+        ) : null}
+        {line.variantTitle ? (
+          <p className="mt-0.5 text-[13px] text-[#888]">{line.variantTitle}</p>
+        ) : null}
+        <p className="mt-2 text-[14px] font-medium text-[#2f2f2f]">
+          {line.formattedEffectivePrice}
+        </p>
+        <p
+          className={`mt-1 text-[12px] font-medium ${
+            line.inStock && line.available ? "text-[#5f6a00]" : "text-[#9a3f3f]"
+          }`}
+        >
+          {invalid ? line.invalidReason : line.stockLabel}
+        </p>
+        <div className="mt-auto flex items-center justify-between pt-3">
+          <div className="inline-flex items-center rounded-md border border-[#e8e8e8]">
+            <button
+              type="button"
+              disabled={isLoading || invalid}
+              className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
+              aria-label={`Decrease quantity for ${line.productTitle}`}
+              onClick={() => updateQuantity(line, line.quantity - 1)}
+            >
+              −
+            </button>
+            <span className="min-w-[2rem] text-center text-[14px] font-medium tabular-nums">
+              {line.quantity}
+            </span>
+            <button
+              type="button"
+              disabled={isLoading || invalid}
+              className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
+              aria-label={`Increase quantity for ${line.productTitle}`}
+              onClick={() => updateQuantity(line, line.quantity + 1)}
+            >
+              +
+            </button>
+          </div>
+          <button
+            type="button"
+            disabled={isLoading}
+            className="text-[13px] font-medium text-[#9a9a9a] underline decoration-transparent underline-offset-2 transition-colors hover:text-[#b91c1c] hover:decoration-current disabled:opacity-40"
+            onClick={() => removeLine(line)}
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -275,13 +486,18 @@ export function CartSidebar() {
     open,
     closeCart,
     lines,
+    invalidLines,
     itemCount,
-    subtotal,
-    updateQuantity,
-    removeLine,
+    formattedSubtotal,
+    hasInvalidItems,
+    mode,
+    error,
+    replayMessage,
+    isLoading,
+    clearCart,
   } = useCartSidebar();
   const titleId = useId();
-  const isEmpty = lines.length === 0;
+  const isEmpty = lines.length === 0 && invalidLines.length === 0;
 
   useEffect(() => {
     if (!open) return;
@@ -306,9 +522,7 @@ export function CartSidebar() {
         role="presentation"
         aria-hidden={!open}
         className={`fixed inset-0 z-[102] bg-black/35 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
-          open
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={closeCart}
       />
@@ -330,9 +544,10 @@ export function CartSidebar() {
               Shopping bag
             </p>
             <p className="mt-1 text-[18px] font-semibold text-[#2f2f2f]">
-              {isEmpty
-                ? "Your cart"
-                : `${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+              {isEmpty ? "Your cart" : `${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            </p>
+            <p className="mt-1 text-[12px] text-[#888]">
+              {mode === "guest" ? "Guest cart" : "Account cart"}
             </p>
           </div>
           <button
@@ -341,9 +556,15 @@ export function CartSidebar() {
             className="-mr-1 -mt-1 cursor-pointer rounded-md p-2 text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] hover:text-black"
             aria-label="Close cart"
           >
-            <CloseIcon className="h-6 w-6" />
+            ×
           </button>
         </div>
+
+        {error || replayMessage ? (
+          <div className="mx-6 mt-4 rounded-xl border border-[#f0d4d4] bg-[#fff7f7] px-4 py-3 text-[13px] leading-relaxed text-[#704040] lg:mx-8">
+            {error || replayMessage}
+          </div>
+        ) : null}
 
         {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center px-8 pb-12 text-center">
@@ -352,8 +573,7 @@ export function CartSidebar() {
               Your cart is empty
             </h2>
             <p className="mt-3 max-w-[280px] text-[15px] leading-relaxed text-[#6a6a6a]">
-              Discover new arrivals and timeless pieces — add something you love
-              to get started.
+              Discover new arrivals and timeless pieces to get started.
             </p>
             <Link
               href="/collections"
@@ -366,80 +586,23 @@ export function CartSidebar() {
         ) : (
           <>
             <ul className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-6 lg:px-8">
+              {invalidLines.map((line) => (
+                <CartLineRow key={`invalid-${line.id}`} line={line} invalid />
+              ))}
               {lines.map((line) => (
-                <li
-                  key={line.id}
-                  className="flex gap-4 border-b border-[#f5f5f5] pb-4 last:border-b-0 last:pb-0"
-                >
-                  <div className="relative h-[110px] w-[78px] shrink-0 overflow-hidden rounded-lg bg-[#f7f7f5]">
-                    <Image
-                      src={line.imageSrc}
-                      alt=""
-                      fill
-                      sizes="78px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <p className="text-[15px] font-semibold leading-snug text-[#2f2f2f]">
-                      {line.name}
-                    </p>
-                    {line.subtitle ? (
-                      <p className="mt-0.5 text-[13px] text-[#888]">
-                        {line.subtitle}
-                      </p>
-                    ) : null}
-                    <p className="mt-2 text-[14px] font-medium text-[#2f2f2f]">
-                      {formatInr(line.unitPrice)}
-                    </p>
-                    <div className="mt-auto flex items-center justify-between pt-3">
-                      <div className="inline-flex items-center rounded-md border border-[#e8e8e8]">
-                        <button
-                          type="button"
-                          className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5]"
-                          aria-label={`Decrease quantity for ${line.name}`}
-                          onClick={() =>
-                            updateQuantity(line.id, line.quantity - 1)
-                          }
-                        >
-                          −
-                        </button>
-                        <span className="min-w-[2rem] text-center text-[14px] font-medium tabular-nums">
-                          {line.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5]"
-                          aria-label={`Increase quantity for ${line.name}`}
-                          onClick={() =>
-                            updateQuantity(line.id, line.quantity + 1)
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        className="text-[13px] font-medium text-[#9a9a9a] underline decoration-transparent underline-offset-2 transition-colors hover:text-[#b91c1c] hover:decoration-current"
-                        onClick={() => removeLine(line.id)}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </li>
+                <CartLineRow key={line.id} line={line} />
               ))}
             </ul>
 
             <div className="shrink-0 border-t border-[#f0f0f0] bg-[#fafaf8] px-6 py-5 lg:px-8">
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-[15px] text-[#555]">Subtotal</span>
+                <span className="text-[15px] text-[#555]">Live subtotal</span>
                 <span className="text-[18px] font-semibold text-[#2f2f2f]">
-                  {formatInr(subtotal)}
+                  {formattedSubtotal}
                 </span>
               </div>
               <p className="mt-2 text-[12px] leading-relaxed text-[#888]">
-                Shipping and taxes calculated at checkout.
+                Prices and stock are revalidated before checkout.
               </p>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <Link
@@ -449,21 +612,32 @@ export function CartSidebar() {
                 >
                   Cart
                 </Link>
-                <Link
-                  href="/checkout"
-                  onClick={closeCart}
-                  className="flex h-12 items-center justify-center bg-[#2f2f2f] text-[15px] font-semibold text-white transition-colors hover:bg-black"
-                >
-                  Checkout
-                </Link>
+                {hasInvalidItems ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex h-12 items-center justify-center bg-[#2f2f2f] text-[15px] font-semibold text-white opacity-45"
+                  >
+                    Fix items
+                  </button>
+                ) : (
+                  <Link
+                    href="/checkout"
+                    onClick={closeCart}
+                    className="flex h-12 items-center justify-center bg-[#2f2f2f] text-[15px] font-semibold text-white transition-colors hover:bg-black"
+                  >
+                    Checkout
+                  </Link>
+                )}
               </div>
-              <Link
-                href="/collections"
-                onClick={closeCart}
-                className="mt-3 block text-center text-[14px] font-medium text-[#9ea600] underline-offset-2 hover:underline"
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => void clearCart()}
+                className="mt-3 block w-full text-center text-[14px] font-medium text-[#9a3f3f] underline-offset-2 hover:underline disabled:opacity-40"
               >
-                Continue shopping
-              </Link>
+                Clear cart
+              </button>
             </div>
           </>
         )}

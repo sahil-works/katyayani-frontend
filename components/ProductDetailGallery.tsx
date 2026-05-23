@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import Slider, { type Settings } from "react-slick";
-import type { ProductImage } from "../lib/productDetail";
+import type { StorefrontImageViewModel } from "../lib/storefront/types/viewModels";
+import { StorefrontImage } from "./storefront/StorefrontImage";
 
 type ThumbArrowProps = {
   className?: string;
@@ -66,7 +66,7 @@ export default function ProductDetailGallery({
   images,
   productName,
 }: {
-  images: ProductImage[];
+  images: StorefrontImageViewModel[];
   productName: string;
 }) {
   const [active, setActive] = useState(0);
@@ -114,10 +114,10 @@ export default function ProductDetailGallery({
 
   return (
     <div className="space-y-4 lg:space-y-5">
-      <div className="relative aspect-[3/3] w-full overflow-hidden rounded-xl bg-[#f4f4f4]">
-        <Image
-          src={main.src}
-          alt={main.alt || productName}
+      <div className="relative aspect-3/3 w-full overflow-hidden rounded-xl bg-[#f4f4f4]">
+        <StorefrontImage
+          image={main}
+          fallbackAlt={productName}
           fill
           priority
           className="object-cover object-center"
@@ -184,9 +184,8 @@ export default function ProductDetailGallery({
                   aria-label={`Show image ${index + 1} of ${safeImages.length}`}
                   aria-pressed={active === index}
                 >
-                  <Image
-                    src={img.src}
-                    alt=""
+                  <StorefrontImage
+                    image={{ ...img, alt: "" }}
                     fill
                     className="object-cover object-center"
                     sizes="120px"

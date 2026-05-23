@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCartSidebar } from "./CartSidebar";
 import { useLoginModal } from "./LoginModal";
 import { useSearchSidebar } from "./SearchSidebar";
+import { useAuth } from "../providers/AuthProvider";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -88,7 +89,8 @@ export default function Header() {
   const router = useRouter();
   const { open: searchOpen, openSearch, closeSearch } = useSearchSidebar();
   const { open: cartOpen, openCart, closeCart, itemCount } = useCartSidebar();
-  const { openLogin, isLoggedIn, user, logout } = useLoginModal();
+  const { openLogin } = useLoginModal();
+  const { isAuthenticated, user, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -202,7 +204,7 @@ export default function Header() {
             </span>
           </button>
 
-          {isLoggedIn && user ? (
+          {isAuthenticated && user ? (
             <div className="relative ml-2" ref={profileMenuRef}>
               <button
                 type="button"
@@ -258,8 +260,8 @@ export default function Header() {
                   type="button"
                   className="mt-1 block w-full cursor-pointer rounded-xl px-3 py-2.5 text-left text-[15px] text-[#c14747] transition-colors hover:bg-[#fff2f2]"
                   role="menuitem"
-                  onClick={() => {
-                    logout();
+                  onClick={async () => {
+                    await logout();
                     setProfileMenuOpen(false);
                     router.push("/");
                   }}

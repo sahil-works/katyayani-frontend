@@ -1,51 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-
-interface Collection {
-  id: number;
-  title: string;
-  productsCount: number;
-  image: string;
-}
-
-const collections: Collection[] = [
-  {
-    id: 1,
-    title: "New Arrivals",
-    productsCount: 5592,
-    image: "/assets/images/banner-one.png",
-  },
-  {
-    id: 2,
-    title: "Newly Added",
-    productsCount: 2055,
-    image: "/assets/images/banner-two.png",
-  },
-  {
-    id: 3,
-    title: "TISSUE COLLECTION",
-    productsCount: 1138,
-    image: "/assets/images/banner-one.png",
-  },
-  {
-    id: 4,
-    title: "Summer Kurta Sets",
-    productsCount: 836,
-    image: "/assets/images/banner-two.png",
-  },
-  {
-    id: 5,
-    title: "Handcrafted Edit",
-    productsCount: 642,
-    image: "/assets/images/banner-one.png",
-  },
-  {
-    id: 6,
-    title: "Party Wear",
-    productsCount: 978,
-    image: "/assets/images/banner-two.png",
-  },
-];
+import CollectionsContent from "../../components/CollectionsContent";
 
 export const metadata = {
   title: "Collections | Katyayani Designer Hub",
@@ -64,26 +18,9 @@ export default function CollectionsPage() {
           <span>Collections</span>
         </div>
 
-        <section className="mt-9 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-          {collections.map((collection) => (
-            <article key={collection.id}>
-              <Image
-                src={collection.image}
-                alt={collection.title}
-                width={420}
-                height={460}
-                className="h-[320px] w-full rounded-[14px] object-cover"
-                priority={collection.id <= 3}
-              />
-              <h2 className="mt-4 text-center text-[24px] leading-none font-normal text-[#2e2e2e]">
-                {collection.title}
-              </h2>
-              <p className="mt-2 text-center text-[18px] leading-none text-[#9f9f9f]">
-                {collection.productsCount} products
-              </p>
-            </article>
-          ))}
-        </section>
+        <div className="mt-9">
+          <CollectionsContent />
+        </div>
       </div>
     </main>
   );

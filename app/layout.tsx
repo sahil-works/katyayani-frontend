@@ -9,6 +9,8 @@ import {
   SearchSidebar,
   SearchSidebarProvider,
 } from "../components/SearchSidebar";
+import { AuthProvider } from "../providers/AuthProvider";
+import { ReactQueryProvider } from "../providers/ReactQueryProvider";
 
 const jost = Jost({
   variable: "--font-jost",
@@ -29,17 +31,21 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jost.variable} h-full antialiased`}>
       <body className="min-h-full bg-white font-sans text-[#222]">
-        <SearchSidebarProvider>
-          <CartSidebarProvider>
-            <LoginModalProvider>
-              <Header />
-              <SearchSidebar />
-              <CartSidebar />
-              <LoginModal />
-              {children}
-            </LoginModalProvider>
-          </CartSidebarProvider>
-        </SearchSidebarProvider>
+        <ReactQueryProvider>
+          <AuthProvider>
+            <SearchSidebarProvider>
+              <LoginModalProvider>
+                <CartSidebarProvider>
+                  <Header />
+                  <SearchSidebar />
+                  <CartSidebar />
+                  <LoginModal />
+                  {children}
+                </CartSidebarProvider>
+              </LoginModalProvider>
+            </SearchSidebarProvider>
+          </AuthProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -86,6 +87,7 @@ function CloseIcon({ className }: { className?: string }) {
 
 export function SearchSidebar() {
   const { open, closeSearch } = useSearchSidebar();
+  const router = useRouter();
   const titleId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -146,7 +148,16 @@ export function SearchSidebar() {
           </button>
         </div>
 
-        <div className="mt-5 px-6 lg:px-8">
+        <form
+          className="mt-5 px-6 lg:px-8"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const q = inputRef.current?.value.trim();
+            if (!q) return;
+            closeSearch();
+            router.push(`/new-arrivals?q=${encodeURIComponent(q)}`);
+          }}
+        >
           <label htmlFor="product-search" className="sr-only">
             Search products
           </label>
@@ -160,9 +171,15 @@ export function SearchSidebar() {
               autoComplete="off"
               className="w-full min-w-0 border-0 bg-transparent pr-10 text-[18px] font-medium text-[#2f2f2f] placeholder:text-[#8a8a8a] outline-none focus:ring-0"
             />
-            <SearchInputIcon className="pointer-events-none absolute right-0 bottom-2 h-6 w-6 shrink-0 text-[#2f2f2f]" />
+            <button
+              type="submit"
+              className="absolute right-0 bottom-1 grid h-8 w-8 place-items-center text-[#2f2f2f]"
+              aria-label="Search products"
+            >
+              <SearchInputIcon className="h-6 w-6 shrink-0" />
+            </button>
           </div>
-        </div>
+        </form>
 
         <div className="mt-10 flex-1 overflow-y-auto px-6 pb-10 lg:px-8">
           {/* Results or trending searches can be rendered here */}

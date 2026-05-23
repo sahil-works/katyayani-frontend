@@ -1,92 +1,26 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Dancing_Script } from "next/font/google";
-import Image from "next/image";
 import Link from "next/link";
-import { useCartSidebar } from "./CartSidebar";
+import { productsQueryOptions } from "../lib/api";
+import {
+  StorefrontEmptyState,
+  StorefrontErrorState,
+  StorefrontSkeleton,
+} from "./storefront/AsyncStates";
+import { ProductCard } from "./storefront/ProductCard";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
 
-const products = [
-  {
-    id: 1,
-    slug: "mul-cotton-chanderi-unstitched-suits",
-    title: "Cotron Chanderi Elegant Suit Set",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-one.png",
-  },
-  {
-    id: 2,
-    slug: "mul-cotton-chanderi-unstitched-pearl",
-    title: "Lightweight Crinkled Mul Cotton Suit",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-two.png",
-  },
-  {
-    id: 3,
-    slug: "mul-chanderi-unstitched-suits",
-    title: "Cotron Chanderi Elegant Suit Set",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-two.png",
-  },
-  {
-    id: 4,
-    slug: "mirror-work-suit-set",
-    title: "Crushed Tissue Unstitched Suits",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-one.png",
-  },
-  {
-    id: 5,
-    slug: "silk-blend-festive-suit",
-    title: "Stunning Long Ethnic Dress Ajrakh",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-one.png",
-  },
-  {
-    id: 6,
-    slug: "mul-cotton-chanderi-unstitched-suits",
-    title: "Hand-Embroidered Kurta With Work",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-two.png",
-  },
-  {
-    id: 7,
-    slug: "mul-cotton-chanderi-unstitched-pearl",
-    title: "Soft Mul Cotton Unstitched Suit",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-two.png",
-  },
-  {
-    id: 8,
-    slug: "mul-chanderi-unstitched-suits",
-    title: "Ivory & Slate Blue Textured Suit",
-    price: "Rs. 5,250.00",
-    unitPrice: 5250,
-    oldPrice: "Rs. 7,500.00",
-    image: "/assets/images/banner-one.png",
-  },
-];
-
 export default function NewArrivalsSection() {
-  const { addLine, openCart } = useCartSidebar();
+  const productsQuery = useQuery(
+    productsQueryOptions({ limit: 8, tag: "new-arrivals" }),
+  );
+  const products = productsQuery.data?.items ?? [];
 
   return (
     <section className="bg-[#f1f1f1] py-14">
@@ -100,63 +34,52 @@ export default function NewArrivalsSection() {
               New Arrivals
             </h2>
           </div>
-          <p className="max-w-[360px] pt-2 text-[19px] leading-[1.35] text-[#555] text-right">
+          <p className="max-w-[360px] pt-2 text-[19px] leading-[1.35] text-[#555] sm:text-right">
             New season, new vibes, new arrivals because you deserve the freshest
             picks.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((product) => (
-            <article key={product.id}>
-              <Link href={`/products/${product.slug}`} className="block">
-                <div className="relative overflow-hidden rounded-[18px]">
-                  <Image
-                    src={product.image}
-                    alt={product.title}
-                    width={305}
-                    height={385}
-                    className="h-[380px] w-full object-cover"
-                  />
-                </div>
-                <h3 className="mt-3 line-clamp-1 text-[21px] text-[#1f1f1f]">
-                  {product.title}
-                </h3>
-              </Link>
-              <div className="my-3 flex flex-nowrap items-center gap-2 whitespace-nowrap leading-none">
-                <span className="text-[22px] font-medium text-[#9ea600]">{product.price}</span>
-                <span className="text-[18px] text-[#7a7a7a] line-through">
-                  {product.oldPrice}
-                </span>
-              </div>
-              <div className="mt-2 flex items-center">
-                <button
-                  type="button"
-                  className="cursor-pointer border-b border-[#868686] pb-0.5 text-[18px] leading-none text-[#404040] transition-colors hover:text-black"
-                  onClick={() => {
-                    addLine({
-                      id: `new-arrival-${product.id}`,
-                      name: product.title,
-                      unitPrice: product.unitPrice,
-                      imageSrc: product.image,
-                    });
-                    openCart();
-                  }}
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+        {productsQuery.isLoading ? (
+          <StorefrontSkeleton rows={8} label="Loading new arrivals" />
+        ) : productsQuery.isError ? (
+          <StorefrontErrorState
+            error={productsQuery.error}
+            title="Could not load new arrivals"
+            action={
+              <button
+                type="button"
+                onClick={() => productsQuery.refetch()}
+                className="text-[14px] font-semibold text-[#8a2f2f] underline"
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : products.length === 0 ? (
+          <StorefrontEmptyState
+            title="No new arrivals yet"
+            description="Fresh products will appear here as soon as they are published."
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                imagePriority={index < 4}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="mt-10 flex justify-center">
-          <button
-            type="button"
-            className="min-w-[118px] bg-[#9ea600] px-6 py-3 text-[20px] font-medium text-white"
+          <Link
+            href="/new-arrivals?tag=new-arrivals"
+            className="min-w-[118px] bg-[#9ea600] px-6 py-3 text-center text-[20px] font-medium text-white"
           >
             View all
-          </button>
+          </Link>
         </div>
       </div>
     </section>
