@@ -73,11 +73,18 @@ function normalizePagination(
 
   return {
     page,
+    skip:
+      typeof pagination.skip === "number" && Number.isFinite(pagination.skip)
+        ? pagination.skip
+        : undefined,
     limit,
     total,
     totalPages,
+    hasMore:
+      typeof pagination.hasMore === "boolean" ? pagination.hasMore : undefined,
     hasNextPage:
       Boolean(pagination.hasNextPage) ||
+      Boolean(pagination.hasMore) ||
       (totalPages > 0 && page < totalPages),
     hasPreviousPage:
       Boolean(pagination.hasPreviousPage) || page > 1,

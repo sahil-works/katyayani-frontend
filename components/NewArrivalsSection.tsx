@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dancing_Script } from "next/font/google";
 import Link from "next/link";
 import { productsQueryOptions } from "../lib/api";
+import { buildProductListingHref } from "../lib/storefront";
 import {
   StorefrontEmptyState,
   StorefrontErrorState,
@@ -75,7 +76,7 @@ export default function NewArrivalsSection() {
 
         <div className="mt-10 flex justify-center">
           <Link
-            href="/new-arrivals?tag=new-arrivals"
+            href={buildProductListingHref({ tag: "new-arrivals" })}
             className="min-w-[118px] bg-[#9ea600] px-6 py-3 text-center text-[20px] font-medium text-white"
           >
             View all

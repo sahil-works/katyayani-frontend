@@ -15,6 +15,9 @@ function CartLineRow({
 }) {
   const { updateQuantity, removeLine, isLoading } = useCartSidebar();
   const href = line.slug ? `/products/${line.slug}` : "/collections";
+  const reachedAvailableLimit =
+    typeof line.availableQuantity === "number" &&
+    line.quantity >= line.availableQuantity;
 
   return (
     <li className="grid grid-cols-1 gap-4 border-b border-[#ececec] px-4 py-5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_180px_180px] md:items-center md:px-6">
@@ -79,7 +82,7 @@ function CartLineRow({
           </span>
           <button
             type="button"
-            disabled={isLoading || invalid}
+            disabled={isLoading || invalid || reachedAvailableLimit}
             onClick={() => void updateQuantity(line, line.quantity + 1)}
             className="grid h-full w-11 place-items-center text-[18px] text-[#444] hover:bg-[#f4f4f4] disabled:opacity-40"
             aria-label={`Increase quantity for ${line.productTitle}`}

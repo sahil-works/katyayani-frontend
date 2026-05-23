@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dancing_Script } from "next/font/google";
 import Link from "next/link";
 import { categoriesQueryOptions } from "../lib/api";
+import { buildProductListingHref } from "../lib/storefront";
 import {
   StorefrontEmptyState,
   StorefrontErrorState,
@@ -63,7 +64,7 @@ export default function ShopByCategoriesSection() {
             {categories.slice(0, 5).map((category, index) => (
               <Link
                 key={category.id}
-                href={`/new-arrivals?categoryId=${encodeURIComponent(category.id)}`}
+                href={buildProductListingHref({ categoryId: category.id })}
                 className="group block text-center"
               >
                 <article>

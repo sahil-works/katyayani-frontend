@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useCartSidebar } from "./CartSidebar";
 import type { ProductDetailViewModel } from "../lib/storefront/types/viewModels";
 
 export default function ProductPurchaseBar({ product }: { product: ProductDetailViewModel }) {
-  const { addLine, openCart } = useCartSidebar();
+  const { addLine, openCart, isLoading } = useCartSidebar();
   const [qty, setQty] = useState(1);
 
   const variant = product.primaryVariant ?? product.variants.find((item) => item.inStock);
@@ -25,6 +24,7 @@ export default function ProductPurchaseBar({ product }: { product: ProductDetail
       effectivePrice: variant.price.effectivePrice,
       image,
       quantity: qty,
+      availableQuantity: variant.stockQuantity,
       inStock: variant.inStock,
       available: variant.isActive,
       stockLabel: variant.stockLabel,
@@ -49,7 +49,7 @@ export default function ProductPurchaseBar({ product }: { product: ProductDetail
           >
             −
           </button>
-          <span className="flex min-w-[3rem] items-center justify-center border-x border-[#d8d8d8] text-[17px] font-medium tabular-nums">
+          <span className="flex min-w-12 items-center justify-center border-x border-[#d8d8d8] text-[17px] font-medium tabular-nums">
             {qty}
           </span>
           <button
@@ -65,18 +65,19 @@ export default function ProductPurchaseBar({ product }: { product: ProductDetail
         <button
           type="button"
           onClick={() => void handleAddToCart()}
-          disabled={!variant || !variant.inStock}
+          disabled={!variant || !variant.inStock || isLoading}
           className="h-12 flex-1 min-w-[200px] bg-[#9ea600] px-6 text-[14px] font-semibold tracking-[0.08em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 sm:max-w-none"
         >
           ADD TO CART
         </button>
 
-        <Link
-          href="/checkout"
-          className="inline-flex h-12 flex-1 min-w-[200px] items-center justify-center bg-[#3d3d3d] px-6 text-[14px] font-semibold tracking-[0.08em] text-white transition-opacity hover:opacity-90 sm:max-w-none"
+        <button
+          type="button"
+          disabled
+          className="inline-flex h-12 flex-1 min-w-[200px] items-center justify-center bg-[#3d3d3d] px-6 text-[14px] font-semibold tracking-[0.08em] text-white opacity-45 sm:max-w-none"
         >
           BUY IT NOW
-        </Link>
+        </button>
       </div>
     </div>
   );

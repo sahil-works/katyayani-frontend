@@ -7,9 +7,11 @@ export type QueryParams = Record<
 
 export type PaginationMeta = {
   page: number;
+  skip?: number;
   limit: number;
   total: number;
   totalPages: number;
+  hasMore?: boolean;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 };

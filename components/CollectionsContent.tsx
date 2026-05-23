@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { categoriesQueryOptions } from "../lib/api";
+import { buildProductListingHref } from "../lib/storefront";
 import {
   StorefrontEmptyState,
   StorefrontErrorState,
@@ -50,7 +51,7 @@ export default function CollectionsContent() {
       {categories.map((category, index) => (
         <Link
           key={category.id}
-          href={`/new-arrivals?categoryId=${encodeURIComponent(category.id)}`}
+          href={buildProductListingHref({ categoryId: category.id })}
           className="group block"
         >
           <article>

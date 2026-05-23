@@ -7,8 +7,17 @@ type CartItemApiResponse = {
   productId: string;
   variantId: string;
   quantity: number;
+  productTitle?: string | null;
+  productSlug?: string | null;
+  variantTitle?: string | null;
+  variantSku?: string | null;
+  size?: string | number | null;
+  color?: string | number | null;
+  unitPrice?: number | string | null;
+  salePrice?: number | string | null;
   effectivePrice?: number | string | null;
   lineSubtotal?: number | string | null;
+  lineTotal?: number | string | null;
   product?: {
     id?: string;
     title?: string | null;
@@ -29,9 +38,11 @@ type CartItemApiResponse = {
     inStock?: boolean | null;
     stockStatus?: string | null;
   } | null;
-  available?: boolean | null;
+  available?: boolean | number | null;
   inStock?: boolean | null;
   invalidReason?: string | null;
+  reason?: string | null;
+  message?: string | null;
 };
 
 type CartApiResponse = {
@@ -39,6 +50,7 @@ type CartApiResponse = {
   lines?: CartItemApiResponse[];
   invalidItems?: CartItemApiResponse[];
   subtotal?: number | string | null;
+  totalItems?: number | string | null;
 };
 
 function coerceNumber(value: number | string | null | undefined) {
@@ -70,6 +82,8 @@ function pickImage(item: CartItemApiResponse, title: string) {
 }
 
 function isAvailable(item: CartItemApiResponse) {
+  if (typeof item.available === "number") return item.available > 0;
+
   return (
     item.available !== false &&
     item.product?.available !== false &&
@@ -85,37 +99,67 @@ function isInStock(item: CartItemApiResponse) {
   return true;
 }
 
+function getAvailableQuantity(item: CartItemApiResponse) {
+  if (typeof item.available === "number" && Number.isFinite(item.available)) {
+    return Math.max(0, Math.floor(item.available));
+  }
+  return undefined;
+}
+
+function getVariantTitle(item: CartItemApiResponse) {
+  const optionParts = [item.size, item.color]
+    .filter((value) => value !== null && value !== undefined && value !== "")
+    .map(String);
+
+  return (
+    item.variant?.title ??
+    item.variantTitle ??
+    item.variant?.sku ??
+    item.variantSku ??
+    (optionParts.length > 0 ? optionParts.join(" / ") : undefined)
+  );
+}
+
 function normalizeCartLine(
   item: CartItemApiResponse,
   invalidReason?: string | null,
 ): CartLineViewModel {
-  const title = item.product?.title?.trim() || "Unavailable product";
+  const title =
+    item.product?.title?.trim() ||
+    item.productTitle?.trim() ||
+    "Unavailable product";
   const quantity = Math.max(0, Number(item.quantity) || 0);
-  const effectivePrice = coerceNumber(item.effectivePrice);
+  const effectivePrice =
+    coerceNumber(item.effectivePrice) || coerceNumber(item.salePrice) || coerceNumber(item.unitPrice);
   const lineSubtotal =
-    coerceNumber(item.lineSubtotal) || effectivePrice * quantity;
+    coerceNumber(item.lineSubtotal) ||
+    coerceNumber(item.lineTotal) ||
+    effectivePrice * quantity;
   const available = isAvailable(item);
   const inStock = isInStock(item);
+  const availableQuantity = getAvailableQuantity(item);
 
   return {
     id: `${item.productId}:${item.variantId}`,
     productId: item.productId,
     variantId: item.variantId,
     productTitle: title,
-    slug: item.product?.slug ?? "",
+    slug: item.product?.slug ?? item.productSlug ?? "",
     category:
       item.product?.category?.title ?? item.product?.category?.name ?? undefined,
-    variantTitle: item.variant?.title ?? item.variant?.sku ?? undefined,
+    variantTitle: getVariantTitle(item),
     image: pickImage(item, title),
     quantity,
+    availableQuantity,
     effectivePrice,
     formattedEffectivePrice: formatCurrency(effectivePrice),
     lineSubtotal,
     formattedLineSubtotal: formatCurrency(lineSubtotal),
     inStock,
     available,
-    stockLabel: getStockLabel(inStock),
-    invalidReason: invalidReason ?? item.invalidReason ?? undefined,
+    stockLabel: getStockLabel(inStock, availableQuantity),
+    invalidReason:
+      invalidReason ?? item.invalidReason ?? item.reason ?? item.message ?? undefined,
   };
 }
 
@@ -124,19 +168,25 @@ export function normalizeCart(payload: CartApiResponse): CartViewModel {
   const invalidItems = payload.invalidItems ?? [];
   const lines = validItems.map((item) => normalizeCartLine(item));
   const invalidLines = invalidItems.map((item) =>
-    normalizeCartLine(item, item.invalidReason ?? "This item needs attention."),
+    normalizeCartLine(
+      item,
+      item.invalidReason ??
+        item.reason ??
+        item.message ??
+        "This item needs attention.",
+    ),
   );
   const subtotal =
     coerceNumber(payload.subtotal) ||
     lines.reduce((sum, line) => sum + line.lineSubtotal, 0);
+  const itemCount =
+    coerceNumber(payload.totalItems) ||
+    [...lines, ...invalidLines].reduce((sum, line) => sum + line.quantity, 0);
 
   return {
     lines,
     invalidLines,
-    itemCount: [...lines, ...invalidLines].reduce(
-      (sum, line) => sum + line.quantity,
-      0,
-    ),
+    itemCount,
     subtotal,
     formattedSubtotal: formatCurrency(subtotal),
     hasInvalidItems: invalidLines.length > 0,

@@ -17,8 +17,7 @@ import {
   type QuoteViewModel,
   type RazorpayPrepareViewModel,
 } from "../../lib/api/checkout";
-import { getMyCart } from "../../lib/api/cart";
-import { getApiErrorMessage } from "../../lib/api/errors";
+import { getApiErrorMessage, normalizeApiError } from "../../lib/api/errors";
 import { useAuth } from "../../providers/AuthProvider";
 
 const dancingScript = Dancing_Script({
@@ -224,6 +223,7 @@ export default function CheckoutPage() {
     invalidLines,
     itemCount,
     isLoading: cartIsLoading,
+    clearCart,
     refreshCart,
   } = useCartSidebar();
   const { isAuthenticated, status: authStatus, user } = useAuth();
@@ -236,6 +236,19 @@ export default function CheckoutPage() {
   const [statusResult, setStatusResult] = useState<OrderStatusViewModel | null>(null);
   const inFlightRef = useRef(false);
   const razorpayOpenRef = useRef(false);
+  const paymentCallbackReceivedRef = useRef(false);
+  const mountedRef = useRef(false);
+  const pollingRunRef = useRef(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+      pollingRunRef.current += 1;
+      razorpayOpenRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -252,21 +265,73 @@ export default function CheckoutPage() {
   }, [user]);
 
   const pollOrderStatus = useCallback(async (id: string) => {
-    setStage("polling");
+    const runId = pollingRunRef.current + 1;
+    pollingRunRef.current = runId;
+    const isActivePoll = () =>
+      mountedRef.current && pollingRunRef.current === runId;
+
+    if (isActivePoll()) setStage("polling");
     const startedAt = Date.now();
     const timeoutMs = 2 * 60 * 1000;
+    let transientFailures = 0;
 
-    while (Date.now() - startedAt < timeoutMs) {
-      const nextStatus = await getOrderStatus(id);
+    while (isActivePoll() && Date.now() - startedAt < timeoutMs) {
+      let nextStatus: OrderStatusViewModel;
+
+      try {
+        nextStatus = await getOrderStatus(id);
+        transientFailures = 0;
+      } catch (statusError) {
+        if (!isActivePoll()) return null;
+
+        const apiError = normalizeApiError(statusError);
+        if (apiError.status === 401) {
+          const failed: OrderStatusViewModel = {
+            orderId: id,
+            status: "FAILED",
+            retryable: true,
+            message: "Your session expired while confirming payment. Please sign in and check your order status.",
+          };
+          setStatusResult(failed);
+          setStage("failed");
+          return failed;
+        }
+
+        transientFailures += 1;
+        if (transientFailures >= 5) {
+          const failed: OrderStatusViewModel = {
+            orderId: id,
+            status: "FAILED",
+            retryable: true,
+            message:
+              "We could not reach the payment status service. Please retry after checking your connection.",
+          };
+          setStatusResult(failed);
+          setStage("failed");
+          return failed;
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 3000));
+        continue;
+      }
+
+      if (!isActivePoll()) return null;
+
       setStatusResult(nextStatus);
 
       if (isTerminalStatus(nextStatus.status)) {
+        if (nextStatus.status === "PAID") {
+          await clearCart();
+        }
+        if (!isActivePoll()) return nextStatus;
         setStage(stageFromStatus(nextStatus.status));
         return nextStatus;
       }
 
       await new Promise((resolve) => window.setTimeout(resolve, 2500));
     }
+
+    if (!isActivePoll()) return null;
 
     const expired: OrderStatusViewModel = {
       orderId: id,
@@ -278,7 +343,7 @@ export default function CheckoutPage() {
     setStatusResult(expired);
     setStage("expired");
     return expired;
-  }, []);
+  }, [clearCart]);
 
   async function openRazorpay({
     preparedPayment,
@@ -289,6 +354,7 @@ export default function CheckoutPage() {
   }) {
     if (razorpayOpenRef.current) return;
     razorpayOpenRef.current = true;
+    paymentCallbackReceivedRef.current = false;
 
     await loadRazorpayScript();
 
@@ -311,11 +377,13 @@ export default function CheckoutPage() {
       timeout: preparedPayment.timeout,
       handler: () => {
         // The frontend callback is only a signal to start backend verification.
+        paymentCallbackReceivedRef.current = true;
         razorpayOpenRef.current = false;
         void pollOrderStatus(currentOrderId);
       },
       modal: {
         ondismiss: () => {
+          if (paymentCallbackReceivedRef.current) return;
           razorpayOpenRef.current = false;
           setStatusResult({
             orderId: currentOrderId,
@@ -349,6 +417,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (lines.some((line) => !line.inStock || !line.available)) {
+      setError("Some cart items are out of stock. Update your cart before checkout.");
+      return;
+    }
+
     if (lines.length === 0) {
       setError("Your cart is empty.");
       return;
@@ -358,12 +431,23 @@ export default function CheckoutPage() {
 
     try {
       setStage("quoting");
-      await refreshCart();
-      const latestCart = await getMyCart();
+      const latestCart = await refreshCart();
+
+      if (!latestCart) {
+        setStage("idle");
+        setError("We could not refresh your cart. Please sign in again and retry.");
+        return;
+      }
 
       if (latestCart.invalidLines.length > 0) {
         setStage("idle");
         setError("Remove unavailable cart items before checkout.");
+        return;
+      }
+
+      if (latestCart.lines.some((line) => !line.inStock || !line.available)) {
+        setStage("idle");
+        setError("Some cart items are out of stock. Update your cart before checkout.");
         return;
       }
 
@@ -445,6 +529,9 @@ export default function CheckoutPage() {
     "payment_open",
     "polling",
   ].includes(stage);
+  const hasUnavailableCartLines = lines.some(
+    (line) => !line.inStock || !line.available,
+  );
 
   return (
     <main className="min-h-screen bg-[#f8f8f8]">
@@ -509,6 +596,8 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     required
+                    minLength={8}
+                    maxLength={20}
                     placeholder="Phone"
                     value={address.phone}
                     onChange={(event) =>
@@ -563,6 +652,7 @@ export default function CheckoutPage() {
                 <input
                   type="text"
                   required
+                  maxLength={200}
                   placeholder="Address"
                   value={address.addressLine1}
                   onChange={(event) =>
@@ -575,6 +665,7 @@ export default function CheckoutPage() {
                 />
                 <input
                   type="text"
+                  maxLength={200}
                   placeholder="Apartment, suite, etc. (optional)"
                   value={address.addressLine2}
                   onChange={(event) =>
@@ -590,6 +681,7 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
+                    maxLength={80}
                     placeholder="City"
                     value={address.city}
                     onChange={(event) =>
@@ -600,6 +692,7 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
+                    maxLength={80}
                     placeholder="State"
                     value={address.state}
                     onChange={(event) =>
@@ -610,6 +703,8 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
+                    minLength={3}
+                    maxLength={20}
                     placeholder="PIN code"
                     value={address.postalCode}
                     onChange={(event) =>
@@ -652,7 +747,8 @@ export default function CheckoutPage() {
                     isBusy ||
                     cartIsLoading ||
                     lines.length === 0 ||
-                    invalidLines.length > 0
+                    invalidLines.length > 0 ||
+                    hasUnavailableCartLines
                   }
                   className="mt-4 h-12 w-full rounded-md bg-[#0070f3] text-[16px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >

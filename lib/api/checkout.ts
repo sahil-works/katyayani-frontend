@@ -15,6 +15,17 @@ export type CheckoutAddress = {
   country: "India";
 };
 
+type BackendCheckoutAddress = {
+  fullName: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
+
 export type CheckoutLinePayload = {
   productId: string;
   variantId: string;
@@ -25,16 +36,26 @@ type QuoteLineApiResponse = {
   productId: string;
   variantId: string;
   quantity: number;
+  productTitle?: string | null;
+  variantSku?: string | null;
+  size?: string | number | null;
+  color?: string | number | null;
   effectivePrice?: number | string | null;
   lineSubtotal?: number | string | null;
+  lineTotal?: number | string | null;
+  available?: number | null;
+  inStock?: boolean | null;
 };
 
 type UnavailableItemApiResponse = {
   productId?: string;
   variantId?: string;
+  quantity?: number;
   title?: string | null;
+  productTitle?: string | null;
   reason?: string | null;
   message?: string | null;
+  available?: number | null;
 };
 
 type QuoteApiResponse = {
@@ -57,6 +78,7 @@ type OrderApiResponse = {
   id?: string;
   orderId?: string;
   status?: string;
+  paymentExpiresAt?: string | null;
 };
 
 type RazorpayPrepareApiResponse = {
@@ -77,17 +99,31 @@ type RazorpayPrepareApiResponse = {
   };
   notes?: Record<string, string | number | boolean>;
   timeout?: number;
+  checkout?: {
+    keyId?: string;
+    razorpayOrderId?: string;
+    amountPaise?: number;
+    amount?: number;
+    currency?: string;
+    orderId?: string;
+    paymentId?: string;
+  };
 };
 
 export type OrderStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "EXPIRED";
 
 type OrderStatusApiResponse = {
   orderId?: string;
+  orderStatus?: string;
   status?: OrderStatus | string;
   paymentStatus?: OrderStatus | string;
   retryable?: boolean;
   message?: string | null;
   expiresAt?: string | null;
+  paymentExpiresAt?: string | null;
+  paidAt?: string | null;
+  total?: number | string | null;
+  currency?: string | null;
 };
 
 export type QuoteViewModel = {
@@ -115,6 +151,7 @@ export type QuoteViewModel = {
 export type CreatedOrder = {
   id: string;
   status?: string;
+  paymentExpiresAt?: string;
 };
 
 export type RazorpayPrepareViewModel = {
@@ -132,6 +169,7 @@ export type RazorpayPrepareViewModel = {
   };
   notes?: Record<string, string | number | boolean>;
   timeout?: number;
+  paymentId?: string;
 };
 
 export type OrderStatusViewModel = {
@@ -157,6 +195,19 @@ function normalizeQuoteLine(line: QuoteLineApiResponse): CheckoutLinePayload {
   };
 }
 
+function toBackendAddress(address: CheckoutAddress): BackendCheckoutAddress {
+  return {
+    fullName: [address.firstName, address.lastName].filter(Boolean).join(" ").trim(),
+    phone: address.phone.trim(),
+    line1: address.addressLine1.trim(),
+    line2: address.addressLine2?.trim() || undefined,
+    city: address.city.trim(),
+    state: address.state.trim(),
+    postalCode: address.postalCode.trim(),
+    country: "IN",
+  };
+}
+
 function normalizeQuote(payload: QuoteApiResponse): QuoteViewModel {
   const lines = (payload.lines ?? payload.items ?? []).map(normalizeQuoteLine);
   const unavailableItems = [
@@ -165,7 +216,10 @@ function normalizeQuote(payload: QuoteApiResponse): QuoteViewModel {
   ].map((item) => ({
     productId: item.productId,
     variantId: item.variantId,
-    title: item.title?.trim() || "Unavailable item",
+    title:
+      item.title?.trim() ||
+      item.productTitle?.trim() ||
+      (item.variantId ? `Variant ${item.variantId}` : "Unavailable item"),
     reason:
       item.reason?.trim() ||
       item.message?.trim() ||
@@ -205,35 +259,49 @@ function normalizeOrder(payload: OrderApiResponse): CreatedOrder {
   return {
     id,
     status: payload.status,
+    paymentExpiresAt: payload.paymentExpiresAt ?? undefined,
   };
 }
 
 function normalizeRazorpayPrepare(
   payload: RazorpayPrepareApiResponse,
 ): RazorpayPrepareViewModel {
-  const key = payload.key ?? payload.keyId ?? payload.razorpayKeyId;
-  const razorpayOrderId = payload.razorpayOrderId ?? payload.orderId;
+  const checkout = payload.checkout;
+  const key = checkout?.keyId ?? payload.key ?? payload.keyId ?? payload.razorpayKeyId;
+  const razorpayOrderId = checkout?.razorpayOrderId ?? payload.razorpayOrderId ?? payload.orderId;
+  const amount = checkout?.amountPaise ?? checkout?.amount ?? payload.amount;
 
-  if (!key || !razorpayOrderId || !payload.amount) {
+  if (!key || !razorpayOrderId || !amount) {
     throw new Error("Payment prepare response is missing Razorpay details.");
   }
 
   return {
     key,
     razorpayOrderId,
-    amount: payload.amount,
-    currency: payload.currency ?? "INR",
+    amount,
+    currency: checkout?.currency ?? payload.currency ?? "INR",
     name: payload.name ?? "Katyayani Designer Hub",
     description: payload.description,
     image: payload.image,
     prefill: payload.prefill,
     notes: payload.notes,
     timeout: payload.timeout,
+    paymentId: checkout?.paymentId,
   };
 }
 
 function normalizeOrderStatus(payload: OrderStatusApiResponse): OrderStatusViewModel {
-  const rawStatus = String(payload.status ?? payload.paymentStatus ?? "PENDING").toUpperCase();
+  const rawPaymentStatus = String(payload.paymentStatus ?? "").toUpperCase();
+  const rawOrderStatus = String(payload.orderStatus ?? payload.status ?? "").toUpperCase();
+  const rawStatus = rawPaymentStatus === "EXPIRED"
+    ? "EXPIRED"
+    : rawPaymentStatus === "CAPTURED" || rawOrderStatus === "PAID"
+      ? "PAID"
+      : rawOrderStatus === "PENDING_PAYMENT" ||
+          rawPaymentStatus === "CREATED" ||
+          rawPaymentStatus === "AUTHORIZED"
+        ? "PENDING"
+        : rawOrderStatus || rawPaymentStatus || "PENDING";
   const status: OrderStatus =
     rawStatus === "PAID" ||
     rawStatus === "FAILED" ||
@@ -250,8 +318,10 @@ function normalizeOrderStatus(payload: OrderStatusApiResponse): OrderStatusViewM
       payload.message?.trim() ||
       (status === "PENDING"
         ? "Waiting for payment confirmation."
-        : "Payment status updated."),
-    expiresAt: payload.expiresAt ?? undefined,
+        : status === "EXPIRED"
+          ? "The payment window expired."
+          : "Payment status updated."),
+    expiresAt: payload.paymentExpiresAt ?? payload.expiresAt ?? undefined,
   };
 }
 
@@ -274,7 +344,7 @@ export async function quoteOrder({
 }) {
   const result = await apiPost<QuoteApiResponse>(
     "/orders/quote",
-    { lines, address },
+    { items: lines, address: toBackendAddress(address) },
     { auth: true },
   );
   return normalizeQuote(result.data ?? {});
@@ -290,15 +360,8 @@ export async function createOrder({
   const result = await apiPost<OrderApiResponse>(
     "/orders",
     {
-      quoteId: quote.quoteId,
-      lines: quote.lines,
-      address,
-      totals: {
-        subtotal: quote.subtotal,
-        shipping: quote.shipping,
-        tax: quote.tax,
-        total: quote.total,
-      },
+      items: quote.lines,
+      address: toBackendAddress(address),
     },
     { auth: true },
   );
@@ -314,13 +377,8 @@ export async function prepareRazorpayPayment({
 }) {
   const result = await apiPost<RazorpayPrepareApiResponse>(
     `/payments/orders/${encodeURIComponent(orderId)}/prepare`,
-    null,
-    {
-      auth: true,
-      headers: {
-        "Idempotency-Key": idempotencyKey,
-      },
-    },
+    { idempotencyKey },
+    { auth: true },
   );
   return normalizeRazorpayPrepare(result.data ?? {});
 }

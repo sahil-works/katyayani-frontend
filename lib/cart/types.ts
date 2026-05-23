@@ -13,6 +13,7 @@ export type CartLineViewModel = CartLineIdentity & {
   variantTitle?: string;
   image: StorefrontImageViewModel;
   quantity: number;
+  availableQuantity?: number;
   effectivePrice: number;
   formattedEffectivePrice: string;
   lineSubtotal: number;
@@ -34,6 +35,7 @@ export type CartViewModel = {
 
 export type AddCartLineInput = CartLineIdentity & {
   quantity: number;
+  availableQuantity?: number;
   productTitle: string;
   slug: string;
   category?: string;

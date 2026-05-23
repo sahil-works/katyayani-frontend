@@ -2,14 +2,17 @@ import { queryOptions } from "@tanstack/react-query";
 import {
   getProductBySlug,
   getProducts,
+  serializeProductQuery,
   type GetProductsParams,
 } from "./products";
 import { getCategories, getCategoryBySlug } from "./categories";
 import { storefrontQueryKeys } from "./queryKeys";
 
 export function productsQueryOptions(params?: GetProductsParams) {
+  const queryKeyParams = serializeProductQuery(params);
+
   return queryOptions({
-    queryKey: storefrontQueryKeys.products.list(params),
+    queryKey: storefrontQueryKeys.products.list(queryKeyParams),
     queryFn: () => getProducts(params),
   });
 }

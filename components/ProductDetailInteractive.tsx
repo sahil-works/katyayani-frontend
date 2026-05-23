@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductDetailGallery from "./ProductDetailGallery";
 import { useCartSidebar } from "./CartSidebar";
+import { buildProductListingHref } from "../lib/storefront";
 import type {
   ProductDetailViewModel,
   ProductPriceViewModel,
@@ -54,6 +55,7 @@ export default function ProductDetailInteractive({
   const initialVariantId =
     product.primaryVariant?.isActive === true ? product.primaryVariant.id : "";
   const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId);
+  const [isAdding, setIsAdding] = useState(false);
 
   const selectedVariant = useMemo(
     () =>
@@ -68,26 +70,32 @@ export default function ProductDetailInteractive({
   const selectedPrice = selectedVariant?.price ?? product.price;
   const stockLabel = selectedVariant?.stockLabel ?? product.stockLabel;
   const inStock = selectedVariant?.inStock ?? product.inStock;
-  const canAddToCart = Boolean(selectedVariant) && inStock && !cartIsLoading;
+  const canAddToCart = Boolean(selectedVariant) && inStock && !cartIsLoading && !isAdding;
 
   async function handleAddToCart() {
-    if (!selectedVariant) return;
+    if (!selectedVariant || isAdding) return;
 
-    await addLine({
-      productId: product.id,
-      variantId: selectedVariant.id,
-      quantity: 1,
-      productTitle: product.title,
-      slug: product.slug,
-      category: product.category?.title,
-      variantTitle: selectedVariant.title,
-      image: selectedImages[0] ?? product.image,
-      effectivePrice: selectedPrice.effectivePrice,
-      inStock,
-      available: selectedVariant.isActive,
-      stockLabel,
-    });
-    openCart();
+    setIsAdding(true);
+    try {
+      await addLine({
+        productId: product.id,
+        variantId: selectedVariant.id,
+        quantity: 1,
+        productTitle: product.title,
+        slug: product.slug,
+        category: product.category?.title,
+        variantTitle: selectedVariant.title,
+        image: selectedImages[0] ?? product.image,
+        effectivePrice: selectedPrice.effectivePrice,
+        availableQuantity: selectedVariant.stockQuantity,
+        inStock,
+        available: selectedVariant.isActive,
+        stockLabel,
+      });
+      openCart();
+    } finally {
+      setIsAdding(false);
+    }
   }
 
   return (
@@ -98,7 +106,7 @@ export default function ProductDetailInteractive({
         <div>
           {product.category ? (
             <Link
-              href={`/new-arrivals?categoryId=${encodeURIComponent(product.category.id)}`}
+              href={buildProductListingHref({ categoryId: product.category.id })}
               className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#8a8a8a] hover:text-[#5f6a00]"
             >
               {product.category.title}
@@ -190,7 +198,11 @@ export default function ProductDetailInteractive({
             onClick={() => void handleAddToCart()}
             className="h-12 flex-1 min-w-[200px] bg-[#9ea600] px-6 text-[14px] font-semibold tracking-[0.08em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {selectedVariant ? "ADD TO CART" : "SELECTABLE VARIANT UNAVAILABLE"}
+            {isAdding
+              ? "ADDING..."
+              : selectedVariant
+                ? "ADD TO CART"
+                : "SELECTABLE VARIANT UNAVAILABLE"}
           </button>
           <button
             type="button"
@@ -201,8 +213,7 @@ export default function ProductDetailInteractive({
           </button>
         </div>
         <p className="text-[12px] leading-relaxed text-[#777]">
-          Cart and checkout integration will use this selected variant contract
-          in the next commerce phase.
+          Prices and stock are revalidated by the backend cart and checkout quote.
         </p>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { buildProductListingHref } from "../lib/storefront";
 
 type SearchSidebarContextValue = {
   open: boolean;
@@ -115,7 +116,7 @@ export function SearchSidebar() {
       <div
         role="presentation"
         aria-hidden={!open}
-        className={`fixed inset-0 z-[100] bg-black/35 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
+        className={`fixed inset-0 z-100 bg-black/35 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
           open
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -127,7 +128,7 @@ export function SearchSidebar() {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`fixed inset-y-0 right-0 z-[101] flex w-full max-w-md flex-col bg-white shadow-[-12px_0_40px_rgba(0,0,0,0.14)] transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 right-0 z-101 flex w-full max-w-md flex-col bg-white shadow-[-12px_0_40px_rgba(0,0,0,0.14)] transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full pointer-events-none"
         }`}
       >
@@ -155,7 +156,7 @@ export function SearchSidebar() {
             const q = inputRef.current?.value.trim();
             if (!q) return;
             closeSearch();
-            router.push(`/new-arrivals?q=${encodeURIComponent(q)}`);
+            router.push(buildProductListingHref({ q }));
           }}
         >
           <label htmlFor="product-search" className="sr-only">

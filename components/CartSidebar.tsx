@@ -19,7 +19,7 @@ import {
   removeCartItem,
   updateCartItemQuantity,
 } from "../lib/api/cart";
-import { getApiErrorMessage } from "../lib/api/errors";
+import { getApiErrorMessage, normalizeApiError } from "../lib/api/errors";
 import type {
   AddCartLineInput,
   CartLineIdentity,
@@ -50,7 +50,7 @@ type CartSidebarContextValue = {
   updateQuantity: (line: CartLineIdentity, quantity: number) => Promise<void>;
   removeLine: (line: CartLineIdentity) => Promise<void>;
   clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
+  refreshCart: () => Promise<CartViewModel | null>;
 };
 
 const CartSidebarContext = createContext<CartSidebarContextValue | null>(null);
@@ -90,6 +90,13 @@ function normalizeGuestCart(lines: CartLineViewModel[]): CartViewModel {
   };
 }
 
+function normalizeQuantity(quantity: number, maxQuantity?: number) {
+  const normalized = Math.max(0, Math.floor(quantity));
+  return typeof maxQuantity === "number"
+    ? Math.min(normalized, Math.max(0, maxQuantity))
+    : normalized;
+}
+
 function createGuestLine(input: AddCartLineInput): CartLineViewModel {
   const quantity = Math.max(1, Math.floor(input.quantity));
   const lineSubtotal = input.effectivePrice * quantity;
@@ -104,6 +111,7 @@ function createGuestLine(input: AddCartLineInput): CartLineViewModel {
     variantTitle: input.variantTitle,
     image: input.image,
     quantity,
+    availableQuantity: input.availableQuantity,
     effectivePrice: input.effectivePrice,
     formattedEffectivePrice: formatCurrency(input.effectivePrice),
     lineSubtotal,
@@ -155,7 +163,7 @@ function EmptyCartIllustration({ className }: { className?: string }) {
 }
 
 export function CartSidebarProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated, status } = useAuth();
+  const { isAuthenticated, status, refresh, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [guestLines, setGuestLines] = useState<CartLineViewModel[]>([]);
   const [backendCart, setBackendCart] = useState<CartViewModel>(EMPTY_CART);
@@ -164,6 +172,7 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
   const [replayMessage, setReplayMessage] = useState("");
   const [hasHydratedGuestCart, setHasHydratedGuestCart] = useState(false);
   const hasReplayedRef = useRef(false);
+  const mutationInFlightRef = useRef(false);
 
   const mode: CartMode = isAuthenticated ? "authenticated" : "guest";
   const guestCart = useMemo(() => normalizeGuestCart(guestLines), [guestLines]);
@@ -183,18 +192,78 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
     writeGuestCartToStorage(guestLines);
   }, [guestLines, hasHydratedGuestCart, mode]);
 
+  useEffect(() => {
+    if (!hasHydratedGuestCart || mode !== "guest") return;
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== GUEST_CART_STORAGE_KEY) return;
+      setGuestLines(readGuestCartFromStorage());
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [hasHydratedGuestCart, mode]);
+
+  const withAuthRetry = useCallback(
+    async <T,>(operation: () => Promise<T>) => {
+      try {
+        return await operation();
+      } catch (error) {
+        const apiError = normalizeApiError(error);
+        if (apiError.status !== 401) throw apiError;
+
+        await refresh();
+
+        try {
+          return await operation();
+        } catch (retryError) {
+          const retryApiError = normalizeApiError(retryError);
+          if (retryApiError.status === 401) {
+            await logout();
+          }
+          throw retryApiError;
+        }
+      }
+    },
+    [logout, refresh],
+  );
+
+  const runCartMutation = useCallback(
+    async (operation: () => Promise<CartViewModel>) => {
+      if (mutationInFlightRef.current) return null;
+
+      mutationInFlightRef.current = true;
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const cart = await withAuthRetry(operation);
+        setBackendCart(cart);
+        return cart;
+      } catch (cartError) {
+        setError(getApiErrorMessage(cartError));
+        return null;
+      } finally {
+        mutationInFlightRef.current = false;
+        setIsLoading(false);
+      }
+    },
+    [withAuthRetry],
+  );
+
   const refreshCart = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setIsLoading(true);
+    if (!isAuthenticated) return null;
+
     setError("");
     try {
-      setBackendCart(await getMyCart());
+      const cart = await withAuthRetry(getMyCart);
+      setBackendCart(cart);
+      return cart;
     } catch (cartError) {
       setError(getApiErrorMessage(cartError));
-    } finally {
-      setIsLoading(false);
+      return null;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, withAuthRetry]);
 
   useEffect(() => {
     if (status !== "authenticated" || !hasHydratedGuestCart) return;
@@ -213,22 +282,38 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
       const failedLines: CartLineViewModel[] = [];
 
       try {
+        let currentCart = await withAuthRetry(getMyCart);
+
         for (const line of guestLines) {
           try {
-            await addCartItem({
-              productId: line.productId,
-              variantId: line.variantId,
-              quantity: line.quantity,
-              productTitle: line.productTitle,
-              slug: line.slug,
-              category: line.category,
-              variantTitle: line.variantTitle,
-              image: line.image,
-              effectivePrice: line.effectivePrice,
-              inStock: line.inStock,
-              available: line.available,
-              stockLabel: line.stockLabel,
-            });
+            const existing = currentCart.lines.find(
+              (item) =>
+                item.productId === line.productId &&
+                item.variantId === line.variantId,
+            );
+            const quantity = normalizeQuantity(
+              (existing?.quantity ?? 0) + line.quantity,
+              existing?.availableQuantity ?? line.availableQuantity,
+            );
+            if (quantity < 1) throw new Error("This item is unavailable.");
+
+            currentCart = await withAuthRetry(() =>
+              addCartItem({
+                productId: line.productId,
+                variantId: line.variantId,
+                quantity,
+                productTitle: line.productTitle,
+                slug: line.slug,
+                category: line.category,
+                variantTitle: line.variantTitle,
+                image: line.image,
+                effectivePrice: line.effectivePrice,
+                availableQuantity: line.availableQuantity,
+                inStock: line.inStock,
+                available: line.available,
+                stockLabel: line.stockLabel,
+              }),
+            );
           } catch {
             failedLines.push(line);
           }
@@ -236,7 +321,7 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
 
         if (cancelled) return;
 
-        setBackendCart(await getMyCart());
+        setBackendCart(currentCart);
         setGuestLines(failedLines);
         writeGuestCartToStorage(failedLines);
         setReplayMessage(
@@ -256,7 +341,7 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [guestLines, hasHydratedGuestCart, refreshCart, status]);
+  }, [guestLines, hasHydratedGuestCart, refreshCart, status, withAuthRetry]);
 
   useEffect(() => {
     if (status === "guest") {
@@ -277,7 +362,10 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
 
           return prev.map((line) => {
             if (line.id !== id) return line;
-            const quantity = line.quantity + Math.max(1, input.quantity);
+            const quantity = normalizeQuantity(
+              line.quantity + Math.max(1, input.quantity),
+              line.availableQuantity ?? input.availableQuantity,
+            );
             const lineSubtotal = line.effectivePrice * quantity;
             return {
               ...line,
@@ -290,26 +378,37 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const existing = backendCart.lines.find(
-        (line) =>
-          line.productId === input.productId && line.variantId === input.variantId,
-      );
-      const quantity = (existing?.quantity ?? 0) + Math.max(1, input.quantity);
-      setIsLoading(true);
-      try {
-        setBackendCart(await addCartItem({ ...input, quantity }));
-      } catch (cartError) {
-        setError(getApiErrorMessage(cartError));
-      } finally {
-        setIsLoading(false);
-      }
+      await runCartMutation(async () => {
+        const latestCart = await withAuthRetry(getMyCart);
+        const existing = latestCart.lines.find(
+          (line) =>
+            line.productId === input.productId &&
+            line.variantId === input.variantId,
+        );
+        const quantity = normalizeQuantity(
+          (existing?.quantity ?? 0) + Math.max(1, input.quantity),
+          existing?.availableQuantity ?? input.availableQuantity,
+        );
+
+        if (quantity < 1) {
+          throw new Error("This item is unavailable.");
+        }
+
+        return withAuthRetry(() => addCartItem({ ...input, quantity }));
+      });
     },
-    [backendCart.lines, isAuthenticated],
+    [isAuthenticated, runCartMutation, withAuthRetry],
   );
 
   const updateQuantity = useCallback(
     async (line: CartLineIdentity, quantity: number) => {
-      const normalizedQuantity = Math.max(0, Math.floor(quantity));
+      const activeLine =
+        activeCart.lines.find((item) => item.id === toLineId(line)) ??
+        activeCart.invalidLines.find((item) => item.id === toLineId(line));
+      const normalizedQuantity = normalizeQuantity(
+        quantity,
+        activeLine?.availableQuantity,
+      );
       setError("");
 
       if (!isAuthenticated) {
@@ -330,21 +429,13 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setIsLoading(true);
-      try {
-        setBackendCart(
-          normalizedQuantity < 1
-            ? await removeCartItem(line)
-            : await updateCartItemQuantity({ ...line, quantity: normalizedQuantity }),
-        );
-      } catch (cartError) {
-        setError(getApiErrorMessage(cartError));
-        await refreshCart();
-      } finally {
-        setIsLoading(false);
-      }
+      await runCartMutation(async () =>
+        normalizedQuantity < 1
+          ? await removeCartItem(line)
+          : await updateCartItemQuantity({ ...line, quantity: normalizedQuantity }),
+      );
     },
-    [isAuthenticated, refreshCart],
+    [activeCart.invalidLines, activeCart.lines, isAuthenticated, runCartMutation],
   );
 
   const removeLine = useCallback(
@@ -362,15 +453,8 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      setBackendCart(await clearMyCart());
-    } catch (cartError) {
-      setError(getApiErrorMessage(cartError));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated]);
+    await runCartMutation(clearMyCart);
+  }, [isAuthenticated, runCartMutation]);
 
   const value: CartSidebarContextValue = {
     open,
@@ -409,6 +493,9 @@ function CartLineRow({
 }) {
   const { updateQuantity, removeLine, isLoading } = useCartSidebar();
   const href = line.slug ? `/products/${line.slug}` : "/collections";
+  const reachedAvailableLimit =
+    typeof line.availableQuantity === "number" &&
+    line.quantity >= line.availableQuantity;
 
   return (
     <li className="flex gap-4 border-b border-[#f5f5f5] pb-4 last:border-b-0 last:pb-0">
@@ -454,12 +541,12 @@ function CartLineRow({
             >
               −
             </button>
-            <span className="min-w-[2rem] text-center text-[14px] font-medium tabular-nums">
+            <span className="min-w-8 text-center text-[14px] font-medium tabular-nums">
               {line.quantity}
             </span>
             <button
               type="button"
-              disabled={isLoading || invalid}
+              disabled={isLoading || invalid || reachedAvailableLimit}
               className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
               aria-label={`Increase quantity for ${line.productTitle}`}
               onClick={() => updateQuantity(line, line.quantity + 1)}
@@ -521,7 +608,7 @@ export function CartSidebar() {
       <div
         role="presentation"
         aria-hidden={!open}
-        className={`fixed inset-0 z-[102] bg-black/35 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
+        className={`fixed inset-0 z-102 bg-black/35 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={closeCart}
@@ -531,7 +618,7 @@ export function CartSidebar() {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`fixed inset-y-0 right-0 z-[103] flex w-full max-w-md flex-col bg-white shadow-[-12px_0_40px_rgba(0,0,0,0.14)] transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 right-0 z-103 flex w-full max-w-md flex-col bg-white shadow-[-12px_0_40px_rgba(0,0,0,0.14)] transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full pointer-events-none"
         }`}
       >

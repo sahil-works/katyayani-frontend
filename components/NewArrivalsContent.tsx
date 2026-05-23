@@ -10,6 +10,7 @@ import {
   productsQueryOptions,
   type GetProductsParams,
 } from "../lib/api";
+import { buildProductListingHref } from "../lib/storefront";
 import { ProductCard } from "./storefront/ProductCard";
 import {
   StorefrontEmptyState,
@@ -34,8 +35,6 @@ export default function NewArrivalsContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [qDraft, setQDraft] = useState(searchParams.get("q") ?? "");
-  const [tagDraft, setTagDraft] = useState(searchParams.get("tag") ?? "");
 
   const q = cleanParam(searchParams.get("q"));
   const categoryId = cleanParam(searchParams.get("categoryId"));
@@ -63,35 +62,32 @@ export default function NewArrivalsContent() {
   const products = productsQuery.data?.items ?? [];
   const pagination = productsQuery.data?.pagination;
 
-  function updateFilters(updates: Record<string, string | undefined>) {
-    const params = new URLSearchParams(searchParams.toString());
-
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    });
-
-    params.delete("page");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  function updateFilters(
+    updates: Partial<Pick<GetProductsParams, "q" | "categoryId" | "tag">>,
+  ) {
+    router.replace(
+      buildProductListingHref({ q, categoryId, tag, ...updates }, pathname),
+      { scroll: false },
+    );
   }
 
   function goToPage(nextPage: number) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(nextPage));
-    router.replace(`${pathname}?${params.toString()}`, { scroll: true });
+    router.replace(
+      buildProductListingHref({ q, categoryId, tag, page: nextPage }, pathname),
+      { scroll: true },
+    );
   }
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    updateFilters({ q: qDraft.trim() || undefined });
+    const formData = new FormData(event.currentTarget);
+    updateFilters({ q: String(formData.get("q") ?? "").trim() || undefined });
   }
 
   function handleTagSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    updateFilters({ tag: tagDraft.trim() || undefined });
+    const formData = new FormData(event.currentTarget);
+    updateFilters({ tag: String(formData.get("tag") ?? "").trim() || undefined });
   }
 
   return (
@@ -125,8 +121,9 @@ export default function NewArrivalsContent() {
               <div className="flex overflow-hidden rounded-lg border border-[#dedede] bg-white">
                 <input
                   id="catalog-q"
-                  value={qDraft}
-                  onChange={(event) => setQDraft(event.target.value)}
+                  key={`q-${q ?? ""}`}
+                  name="q"
+                  defaultValue={q ?? ""}
                   placeholder="Search..."
                   className="min-w-0 flex-1 px-3 py-2.5 text-[15px] outline-none"
                 />
@@ -197,8 +194,9 @@ export default function NewArrivalsContent() {
               <div className="flex overflow-hidden rounded-md border border-[#d9d9d9] bg-white">
                 <input
                   id="catalog-tag"
-                  value={tagDraft}
-                  onChange={(event) => setTagDraft(event.target.value)}
+                  key={`tag-${tag ?? ""}`}
+                  name="tag"
+                  defaultValue={tag ?? ""}
                   placeholder="e.g. new-arrivals"
                   className="h-11 min-w-0 flex-1 px-3 text-[15px] outline-none"
                 />
@@ -215,8 +213,6 @@ export default function NewArrivalsContent() {
               <button
                 type="button"
                 onClick={() => {
-                  setQDraft("");
-                  setTagDraft("");
                   router.replace(pathname, { scroll: false });
                 }}
                 className="mt-6 text-[14px] font-medium text-[#6f7600] underline underline-offset-2"

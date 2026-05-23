@@ -11,6 +11,7 @@ import ShopLatestCollectionSection from "../../../components/ShopLatestCollectio
 import SilkCollectionSection from "../../../components/SilkCollectionSection";
 import { getProductBySlug } from "../../../lib/api";
 import { normalizeApiError } from "../../../lib/api/errors";
+import { buildProductListingHref } from "../../../lib/storefront";
 
 type Props = {
   params: Promise<{ slug?: string }>;
@@ -198,7 +199,7 @@ export default async function ProductDetailPage({ params }: Props) {
           {product.category ? (
             <>
               <Link
-                href={`/new-arrivals?categoryId=${encodeURIComponent(product.category.id)}`}
+                href={buildProductListingHref({ categoryId: product.category.id })}
                 className="hover:text-black"
               >
                 {product.category.title}
