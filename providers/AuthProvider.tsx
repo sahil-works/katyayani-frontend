@@ -18,8 +18,14 @@ import {
   type CustomerUser,
   type LoginInput,
   type RegisterInput,
+  type AuthSession,
 } from "../lib/api/auth";
-import { clearAccessToken, setAccessToken } from "../lib/auth/tokenStore";
+import {
+  clearAuthTokens,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from "../lib/auth/tokenStore";
 
 type AuthStatus = "initializing" | "authenticated" | "guest";
 
@@ -49,33 +55,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshStartedRef = useRef(false);
 
   const applySession = useCallback(
-    async ({
-      accessToken,
-      user: sessionUser,
-    }: {
-      accessToken: string;
-      user: CustomerUser;
-    }) => {
+    async ({ accessToken, refreshToken, user: sessionUser }: AuthSession) => {
       setAccessToken(accessToken);
-      setUser(sessionUser);
-      setStatus("authenticated");
+      if (refreshToken) {
+        setRefreshToken(refreshToken);
+      }
+
+      if (sessionUser) {
+        setUser(sessionUser);
+        setStatus("authenticated");
+      }
 
       try {
         const profile = await getCustomerProfile();
         setUser(profile);
+        setStatus("authenticated");
       } catch {
-        // The auth response user is enough to keep the storefront usable.
+        if (sessionUser) {
+          // The auth response user is enough to keep the storefront usable.
+          setStatus("authenticated");
+          return;
+        }
+
+        clearAuthTokens();
+        setUser(null);
+        setStatus("guest");
       }
     },
     [],
   );
 
   const refresh = useCallback(async () => {
+    const refreshToken = getRefreshToken();
+
     try {
-      const session = await refreshCustomerSession();
+      const session = await refreshCustomerSession(refreshToken);
       await applySession(session);
     } catch {
-      clearAccessToken();
+      clearAuthTokens();
       setUser(null);
       setStatus("guest");
     }
@@ -107,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await logoutCustomer();
     } finally {
-      clearAccessToken();
+      clearAuthTokens();
       setUser(null);
       setStatus("guest");
     }

@@ -21,6 +21,10 @@ const dancingAccent = Dancing_Script({
 
 type AuthTab = "login" | "register";
 
+const NAME_MAX_LENGTH = 80;
+const REGISTER_PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 128;
+
 type LoginModalContextValue = {
   open: boolean;
   openLogin: () => void;
@@ -105,11 +109,19 @@ export function LoginModal() {
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    if (!email || !password) {
+      setError("Enter your email and password.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await login({
-        email: String(formData.get("email") ?? ""),
-        password: String(formData.get("password") ?? ""),
+        email,
+        password,
       });
       closeLogin();
     } catch (authError) {
@@ -125,13 +137,38 @@ export function LoginModal() {
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
+    const firstName = String(formData.get("firstName") ?? "").trim();
+    const lastName = String(formData.get("lastName") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    if (!firstName || !lastName || !email || !password) {
+      setError("Enter your first name, last name, email, and password.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (firstName.length > NAME_MAX_LENGTH || lastName.length > NAME_MAX_LENGTH) {
+      setError("First name and last name must be 80 characters or less.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (
+      password.length < REGISTER_PASSWORD_MIN_LENGTH ||
+      password.length > PASSWORD_MAX_LENGTH
+    ) {
+      setError("Password must be between 8 and 128 characters.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await register({
-        name: String(formData.get("name") ?? ""),
-        email: String(formData.get("email") ?? ""),
-        phone: String(formData.get("phone") ?? "") || undefined,
-        password: String(formData.get("password") ?? ""),
+        firstName,
+        lastName,
+        email,
+        password,
       });
       closeLogin();
     } catch (authError) {
@@ -146,7 +183,7 @@ export function LoginModal() {
       <div
         role="presentation"
         aria-hidden={!open}
-        className={`fixed inset-0 z-[100] bg-[#1a1a12]/45 backdrop-blur-[3px] transition-[opacity,backdrop-filter] duration-300 ease-out ${
+        className={`fixed inset-0 z-100 bg-[#1a1a12]/45 backdrop-blur-[3px] transition-[opacity,backdrop-filter] duration-300 ease-out ${
           open
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0"
@@ -155,7 +192,7 @@ export function LoginModal() {
       />
 
       <div
-        className={`fixed inset-0 z-[101] flex items-center justify-center p-4 sm:p-6 transition-[opacity,transform] duration-300 ease-out ${
+        className={`fixed inset-0 z-101 flex items-center justify-center p-4 sm:p-6 transition-[opacity,transform] duration-300 ease-out ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
@@ -196,8 +233,8 @@ export function LoginModal() {
                 {tab === "login" ? "Sign in to Katyayani" : "Create your account"}
               </h2>
               <p className="mt-2 text-[15px] leading-relaxed text-[#5c5c5c]">
-                Customer auth is separate from admin access and keeps tokens out
-                of localStorage.
+                Customer auth is separate from admin access. Access tokens stay
+                in memory, with refresh kept to this browser tab.
               </p>
             </div>
 
@@ -231,21 +268,43 @@ export function LoginModal() {
               onSubmit={tab === "login" ? handleLogin : handleRegister}
             >
               {tab === "register" ? (
-                <div>
-                  <label
-                    htmlFor="auth-name"
-                    className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
-                  >
-                    Name
-                  </label>
-                  <input
-                    id="auth-name"
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
-                  />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="auth-first-name"
+                      className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                    >
+                      First name
+                    </label>
+                    <input
+                      id="auth-first-name"
+                      name="firstName"
+                      type="text"
+                      autoComplete="given-name"
+                      required
+                      minLength={1}
+                      maxLength={NAME_MAX_LENGTH}
+                      className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="auth-last-name"
+                      className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                    >
+                      Last name
+                    </label>
+                    <input
+                      id="auth-last-name"
+                      name="lastName"
+                      type="text"
+                      autoComplete="family-name"
+                      required
+                      minLength={1}
+                      maxLength={NAME_MAX_LENGTH}
+                      className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
+                    />
+                  </div>
                 </div>
               ) : null}
 
@@ -266,24 +325,6 @@ export function LoginModal() {
                 />
               </div>
 
-              {tab === "register" ? (
-                <div>
-                  <label
-                    htmlFor="auth-phone"
-                    className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
-                  >
-                    Phone
-                  </label>
-                  <input
-                    id="auth-phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
-                  />
-                </div>
-              ) : null}
-
               <div>
                 <label
                   htmlFor="auth-password"
@@ -297,6 +338,8 @@ export function LoginModal() {
                   type="password"
                   autoComplete={tab === "login" ? "current-password" : "new-password"}
                   required
+                  minLength={tab === "register" ? REGISTER_PASSWORD_MIN_LENGTH : 1}
+                  maxLength={PASSWORD_MAX_LENGTH}
                   className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
                 />
               </div>

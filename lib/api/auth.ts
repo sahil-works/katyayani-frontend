@@ -1,6 +1,6 @@
 import { apiGet, apiPost } from "./client";
 
-export type CustomerUserApiResponse = {
+export type CustomerUserDto = {
   id: string;
   name?: string | null;
   firstName?: string | null;
@@ -10,32 +10,53 @@ export type CustomerUserApiResponse = {
   role?: string | null;
 };
 
-type AuthPayload = {
-  user?: CustomerUserApiResponse;
-  customer?: CustomerUserApiResponse;
+export type AuthSessionDto = {
+  user?: CustomerUserDto;
+  customer?: CustomerUserDto;
   accessToken?: string;
+  access_token?: string;
   token?: string;
+  refreshToken?: string;
+  refresh_token?: string;
+  expiresIn?: string | number;
+};
+
+type ProfileResponseDto = CustomerUserDto | {
+  user?: CustomerUserDto;
+  customer?: CustomerUserDto;
 };
 
 export type CustomerUser = {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   initials: string;
 };
 
-export type LoginInput = {
+export type AuthSession = {
+  user?: CustomerUser;
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: string | number;
+};
+
+export type LoginRequest = {
   email: string;
   password: string;
 };
 
-export type RegisterInput = {
-  name: string;
+export type RegisterRequest = {
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
-  phone?: string;
 };
+
+export type LoginInput = LoginRequest;
+export type RegisterInput = RegisterRequest;
 
 function getInitials(name: string, email?: string) {
   const source = name.trim() || email?.split("@")[0] || "Customer";
@@ -52,49 +73,93 @@ function getInitials(name: string, email?: string) {
     : "CS";
 }
 
-export function normalizeCustomerUser(user: CustomerUserApiResponse): CustomerUser {
+function isProfileWrapper(
+  payload: ProfileResponseDto,
+): payload is { user?: CustomerUserDto; customer?: CustomerUserDto } {
+  return "user" in payload || "customer" in payload;
+}
+
+function resolveProfileUser(payload: ProfileResponseDto): CustomerUserDto {
+  if (isProfileWrapper(payload)) {
+    const user = payload.user ?? payload.customer;
+    if (!user) {
+      throw new Error("Profile response did not include a customer.");
+    }
+    return user;
+  }
+
+  return payload;
+}
+
+export function normalizeCustomerUser(user: CustomerUserDto): CustomerUser {
+  const firstName = user.firstName?.trim() || undefined;
+  const lastName = user.lastName?.trim() || undefined;
   const fullName =
     user.name?.trim() ||
-    [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+    [firstName, lastName].filter(Boolean).join(" ").trim() ||
     user.email?.split("@")[0] ||
     "Katyayani Shopper";
 
   return {
     id: user.id,
     name: fullName,
+    firstName,
+    lastName,
     email: user.email ?? undefined,
     phone: user.phone ?? undefined,
     initials: getInitials(fullName, user.email ?? undefined),
   };
 }
 
-function unwrapAuthPayload(payload: AuthPayload) {
-  const user = payload.user ?? payload.customer;
-  const accessToken = payload.accessToken ?? payload.token;
+function unwrapAuthPayload(
+  payload: AuthSessionDto | null | undefined,
+  { requireUser }: { requireUser: boolean },
+): AuthSession {
+  const user = payload?.user ?? payload?.customer;
+  const accessToken =
+    payload?.accessToken ?? payload?.access_token ?? payload?.token;
+  const refreshToken = payload?.refreshToken ?? payload?.refresh_token;
 
-  if (!user || !accessToken) {
-    throw new Error("Auth response did not include a customer and access token.");
+  if (!accessToken) {
+    throw new Error("Auth response did not include an access token.");
+  }
+
+  if (requireUser && !user) {
+    throw new Error("Auth response did not include a customer.");
   }
 
   return {
-    user: normalizeCustomerUser(user),
+    user: user ? normalizeCustomerUser(user) : undefined,
     accessToken,
+    refreshToken,
+    expiresIn: payload?.expiresIn,
   };
 }
 
 export async function registerCustomer(input: RegisterInput) {
-  const result = await apiPost<AuthPayload>("/auth/register", input);
-  return unwrapAuthPayload(result.data);
+  const result = await apiPost<AuthSessionDto>("/auth/register", {
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    password: input.password,
+  });
+  return unwrapAuthPayload(result.data, { requireUser: true });
 }
 
 export async function loginCustomer(input: LoginInput) {
-  const result = await apiPost<AuthPayload>("/auth/login", input);
-  return unwrapAuthPayload(result.data);
+  const result = await apiPost<AuthSessionDto>("/auth/login", {
+    email: input.email,
+    password: input.password,
+  });
+  return unwrapAuthPayload(result.data, { requireUser: true });
 }
 
-export async function refreshCustomerSession() {
-  const result = await apiPost<AuthPayload>("/auth/refresh", null);
-  return unwrapAuthPayload(result.data);
+export async function refreshCustomerSession(refreshToken?: string | null) {
+  const result = await apiPost<AuthSessionDto>(
+    "/auth/refresh",
+    refreshToken ? { refreshToken } : null,
+  );
+  return unwrapAuthPayload(result.data, { requireUser: false });
 }
 
 export async function logoutCustomer() {
@@ -102,9 +167,9 @@ export async function logoutCustomer() {
 }
 
 export async function getCustomerProfile() {
-  const result = await apiGet<CustomerUserApiResponse>("/users/me", undefined, {
+  const result = await apiGet<ProfileResponseDto>("/users/me", undefined, {
     auth: true,
   });
 
-  return normalizeCustomerUser(result.data);
+  return normalizeCustomerUser(resolveProfileUser(result.data));
 }

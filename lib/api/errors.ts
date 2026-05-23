@@ -32,8 +32,16 @@ function readErrorMessage(payload: unknown): string | undefined {
 
   const body = payload as Record<string, unknown>;
   const message = body.message ?? body.error;
+  const details = body.data ?? body.details;
 
   if (typeof message === "string" && message.trim()) {
+    if (Array.isArray(details)) {
+      const detailText = details
+        .filter((item) => typeof item === "string" && item.trim())
+        .join(", ");
+      return detailText ? `${message}: ${detailText}` : message;
+    }
+
     return message;
   }
 

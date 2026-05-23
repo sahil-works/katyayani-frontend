@@ -243,8 +243,11 @@ export default function CheckoutPage() {
       ...prev,
       email: prev.email || user.email || "",
       phone: prev.phone || user.phone || "",
-      firstName: prev.firstName || user.name.split(" ")[0] || "",
-      lastName: prev.lastName || user.name.split(" ").slice(1).join(" "),
+      firstName: prev.firstName || user.firstName || user.name.split(" ")[0] || "",
+      lastName:
+        prev.lastName ||
+        user.lastName ||
+        user.name.split(" ").slice(1).join(" "),
     }));
   }, [user]);
 
