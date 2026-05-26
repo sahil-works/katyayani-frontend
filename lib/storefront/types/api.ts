@@ -12,7 +12,7 @@ export type ProductVariantApiResponse = {
   sku?: string | null;
   title?: string | null;
   image?: ProductImageApiResponse | string | null;
-  images?: ProductImageApiResponse[] | null;
+  images?: Array<ProductImageApiResponse | string> | null;
   price: number | string;
   salePrice?: number | string | null;
   effectivePrice?: number | string | null;
@@ -49,7 +49,7 @@ export type ProductApiResponse = {
   shortDescription?: string | null;
   price?: number | string | null;
   salePrice?: number | string | null;
-  images?: ProductImageApiResponse[] | null;
+  images?: Array<ProductImageApiResponse | string> | null;
   variants?: ProductVariantApiResponse[] | null;
   category?: CategoryApiResponse | null;
   categories?: CategoryApiResponse[] | null;

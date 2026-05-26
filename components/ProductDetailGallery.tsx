@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Slider, { type Settings } from "react-slick";
+import { PRODUCT_IMAGE_FALLBACK } from "../lib/storefront/commerce";
 import type { StorefrontImageViewModel } from "../lib/storefront/types/viewModels";
 import { StorefrontImage } from "./storefront/StorefrontImage";
 
@@ -71,7 +72,7 @@ export default function ProductDetailGallery({
 }) {
   const [active, setActive] = useState(0);
   const safeImages =
-    images.length > 0 ? images : [{ src: "/assets/images/banner-one.png", alt: productName }];
+    images.length > 0 ? images : [{ src: PRODUCT_IMAGE_FALLBACK, alt: productName }];
   const hasMultipleImages = safeImages.length > 1;
 
   const showPreviousImage = () => {

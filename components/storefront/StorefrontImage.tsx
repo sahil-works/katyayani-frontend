@@ -30,7 +30,11 @@ export function StorefrontImage({
       }),
     [fallbackAlt, fallbackSrc, image.alt, image.src],
   );
-  const [src, setSrc] = useState(resolvedImage.src);
+  // When the `image` prop changes, we must not keep showing the previous
+  // fallback URL. We achieve this by remembering for which URL we've already
+  // fallen back, and deriving the `src` during render.
+  const [fallbackForSrc, setFallbackForSrc] = useState<string | null>(null);
+  const src = fallbackForSrc === resolvedImage.src ? fallbackSrc : resolvedImage.src;
 
   return (
     <Image
@@ -39,7 +43,8 @@ export function StorefrontImage({
       alt={resolvedImage.alt}
       onError={() => {
         if (src !== fallbackSrc) {
-          setSrc(fallbackSrc);
+          // Persist fallback per-image to avoid repeated onError loops.
+          setFallbackForSrc(resolvedImage.src);
         }
       }}
     />

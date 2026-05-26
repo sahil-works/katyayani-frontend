@@ -120,19 +120,35 @@ function readVariantImage(
   image: ProductVariantApiResponse["image"],
 ): ProductImageApiResponse | undefined {
   if (typeof image === "string") {
-    return { url: image };
+    return { url: image, src: image };
   }
 
   return image ?? undefined;
 }
 
+function normalizeImageElement(
+  image: ProductImageApiResponse | string,
+): ProductImageApiResponse {
+  if (typeof image === "string") {
+    return { url: image, src: image };
+  }
+
+  return image;
+}
+
 function normalizeVariantImages(
   variant: ProductVariantApiResponse,
 ): StorefrontImageViewModel[] {
-  const variantImages = [
+  const variantImagesInput = [
     readVariantImage(variant.image),
     ...(variant.images ?? []),
-  ].filter((image): image is ProductImageApiResponse => Boolean(image));
+  ].filter((image): image is ProductImageApiResponse | string =>
+    Boolean(image),
+  );
+
+  const variantImages: ProductImageApiResponse[] = variantImagesInput.map(
+    (img) => normalizeImageElement(img),
+  );
 
   return sortImages(variantImages)
     .map((image) =>
@@ -156,7 +172,9 @@ function sortImages(images: ProductImageApiResponse[]) {
 }
 
 function normalizeImages(product: ProductApiResponse): StorefrontImageViewModel[] {
-  const images = sortImages(product.images ?? [])
+  const images = sortImages(
+    (product.images ?? []).map((img) => normalizeImageElement(img)),
+  )
     .map((image) =>
       resolveImageFallback({
         src: image.url ?? image.src,

@@ -14,12 +14,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.amazonaws.com",
+        hostname: "*.s3.ap-south-1.amazonaws.com",
         pathname: "/**",
       },
       {
         protocol: "https",
-        hostname: "**.cloudfront.net",
+        hostname: "*.cloudfront.net",
         pathname: "/**",
       },
     ],

@@ -1,61 +1,21 @@
-import Image from "next/image";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-
-type SilkItem = {
-  id: number;
-  slug: string;
-  name: string;
-  priceLabel: string;
-  imageSrc: string;
-  imageAlt: string;
-  soldOut?: boolean;
-};
-
-const silkItems: SilkItem[] = [
-  {
-    id: 1,
-    slug: "mul-cotton-chanderi-unstitched-suits",
-    name: "Yellow & Pink Suit Set",
-    priceLabel: "Rs. 5,850.00",
-    imageSrc: "/assets/images/banner-one.png",
-    imageAlt: "Yellow and pink suit set",
-  },
-  {
-    id: 2,
-    slug: "mul-cotton-chanderi-unstitched-pearl",
-    name: "Pure SATIN SILK FABRIC SUIT",
-    priceLabel: "Rs. 3,950.00",
-    imageSrc: "/assets/images/banner-two.png",
-    imageAlt: "Pure satin silk fabric suit",
-    soldOut: true,
-  },
-  {
-    id: 3,
-    slug: "mul-chanderi-unstitched-suits",
-    name: "Rani Pink Handwork Kurta Set",
-    priceLabel: "Rs. 6,250.00",
-    imageSrc: "/assets/images/sets.png",
-    imageAlt: "Rani pink handwork kurta set",
-  },
-  {
-    id: 4,
-    slug: "mirror-work-suit-set",
-    name: "Maheshwari Silk Suit",
-    priceLabel: "Rs. 3,995.00",
-    imageSrc: "/assets/images/banner-two.png",
-    imageAlt: "Maheshwari silk suit",
-  },
-  {
-    id: 5,
-    slug: "silk-blend-festive-suit",
-    name: "Silk With Smooth Soft Sheen And Structured Fall",
-    priceLabel: "Rs. 3,550.00",
-    imageSrc: "/assets/images/banner-one.png",
-    imageAlt: "Silk suit with smooth sheen",
-  },
-];
+import { productsQueryOptions } from "../lib/api";
+import {
+  StorefrontEmptyState,
+  StorefrontErrorState,
+  StorefrontSkeleton,
+} from "./storefront/AsyncStates";
+import { ProductCard } from "./storefront/ProductCard";
 
 export default function SilkCollectionSection() {
+  const productsQuery = useQuery(
+    productsQueryOptions({ limit: 5, tag: "silk" }),
+  );
+  const products = productsQuery.data?.items ?? [];
+
   return (
     <section className="bg-[#f3f3f3] pt-14 sm:pt-16" aria-labelledby="silk-collection-heading">
       <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
@@ -66,34 +26,44 @@ export default function SilkCollectionSection() {
           Silk Collection
         </h2>
 
-        <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-5 lg:gap-x-5">
-          {silkItems.map((item) => (
-            <article key={item.id} className="text-center">
-              <Link href={`/products/${item.slug}`} className="block">
-                <div className="relative overflow-hidden rounded-[4px] bg-white">
-                  {item.soldOut ? (
-                    <span className="absolute left-2 top-2 z-10 rounded bg-white/95 px-2 py-1 text-[10px] font-medium text-[#4a4a4a]">
-                      Sold Out
-                    </span>
-                  ) : null}
-                  <Image
-                    src={item.imageSrc}
-                    alt={item.imageAlt}
-                    width={246}
-                    height={320}
-                    className="h-[240px] w-full object-cover sm:h-[280px] lg:h-[320px]"
-                  />
-                </div>
-                <h3 className="mt-3 overflow-hidden text-ellipsis whitespace-nowrap text-[18px] leading-tight font-medium text-[#1f1f1f] sm:text-[20px]">
-                  {item.name}
-                </h3>
-              </Link>
-              <p className="mt-2 text-[17px] leading-none text-[#585858] sm:text-[19px]">
-                {item.priceLabel}
-              </p>
-            </article>
-          ))}
-        </div>
+        {productsQuery.isLoading ? (
+          <div className="mt-10">
+            <StorefrontSkeleton rows={5} label="Loading silk products" />
+          </div>
+        ) : productsQuery.isError ? (
+          <div className="mt-10">
+            <StorefrontErrorState
+              error={productsQuery.error}
+              title="Could not load silk products"
+              action={
+                <button
+                  type="button"
+                  onClick={() => productsQuery.refetch()}
+                  className="text-[14px] font-semibold text-[#8a2f2f] underline"
+                >
+                  Retry
+                </button>
+              }
+            />
+          </div>
+        ) : products.length === 0 ? (
+          <div className="mt-10">
+            <StorefrontEmptyState
+              title="No silk products found"
+              description="Silk collection products will appear here once they are active."
+            />
+          </div>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {products.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                imagePriority={index < 3}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="pb-12 pt-10 text-center">
           <Link
