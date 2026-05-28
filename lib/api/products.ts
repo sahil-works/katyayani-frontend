@@ -10,6 +10,8 @@ import type {
 const DEFAULT_PRODUCT_LIMIT = 12;
 const MAX_PRODUCT_LIMIT = 60;
 
+export type ProductSort = "newest" | "price_low" | "price_high";
+
 export type GetProductsParams = {
   page?: number;
   skip?: number;
@@ -17,6 +19,7 @@ export type GetProductsParams = {
   q?: string;
   categoryId?: string;
   tag?: string;
+  sort?: ProductSort;
 };
 
 export type SerializedProductQuery = {
@@ -25,6 +28,7 @@ export type SerializedProductQuery = {
   q?: string;
   categoryId?: string;
   tag?: string;
+  sort?: ProductSort;
 };
 
 type ProductListPayload =
@@ -83,6 +87,7 @@ export function serializeProductQuery(
     q: cleanString(params.q),
     categoryId: cleanString(params.categoryId),
     tag: cleanString(params.tag),
+    sort: params.sort,
   };
 }
 
@@ -97,6 +102,7 @@ export function toProductApiQuery(
     categoryId: query.categoryId,
     tag: query.tag,
     q: query.q,
+    sort: query.sort,
   };
 }
 
