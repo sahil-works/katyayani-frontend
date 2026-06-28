@@ -43,20 +43,25 @@ export type AuthSession = {
   expiresIn?: string | number;
 };
 
-export type LoginRequest = {
-  email: string;
-  password: string;
+export type SendOtpInput = {
+  phone: string;
 };
 
-export type RegisterRequest = {
+export type VerifyOtpInput = {
+  phone: string;
+  otp: string;
+};
+
+export type CompleteSignupInput = {
+  signupToken: string;
   firstName: string;
   lastName: string;
-  email: string;
-  password: string;
+  email?: string;
 };
 
-export type LoginInput = LoginRequest;
-export type RegisterInput = RegisterRequest;
+export type OtpVerifyResult =
+  | { kind: "session"; session: AuthSession }
+  | { kind: "profile_required"; signupToken: string };
 
 function getInitials(name: string, email?: string) {
   const source = name.trim() || email?.split("@")[0] || "Customer";
@@ -136,20 +141,61 @@ function unwrapAuthPayload(
   };
 }
 
-export async function registerCustomer(input: RegisterInput) {
-  const result = await apiPost<AuthSessionDto>("/auth/register", {
-    firstName: input.firstName,
-    lastName: input.lastName,
-    email: input.email,
-    password: input.password,
-  });
-  return unwrapAuthPayload(result.data, { requireUser: true });
+type OtpVerifyDto = AuthSessionDto & {
+  isNewUser?: boolean;
+  requiresProfile?: boolean;
+  requiresProfileCompletion?: boolean;
+  signupToken?: string;
+  signup_token?: string;
+};
+
+function parseOtpVerifyResponse(payload: OtpVerifyDto | null | undefined): OtpVerifyResult {
+  const signupToken = payload?.signupToken ?? payload?.signup_token;
+  const requiresProfile =
+    payload?.isNewUser ??
+    payload?.requiresProfile ??
+    payload?.requiresProfileCompletion;
+  const accessToken =
+    payload?.accessToken ?? payload?.access_token ?? payload?.token;
+
+  if (requiresProfile && signupToken) {
+    return { kind: "profile_required", signupToken };
+  }
+
+  if (accessToken) {
+    return {
+      kind: "session",
+      session: unwrapAuthPayload(payload, { requireUser: true }),
+    };
+  }
+
+  if (signupToken) {
+    return { kind: "profile_required", signupToken };
+  }
+
+  throw new Error("OTP verification response was incomplete.");
 }
 
-export async function loginCustomer(input: LoginInput) {
-  const result = await apiPost<AuthSessionDto>("/auth/login", {
-    email: input.email,
-    password: input.password,
+export async function sendCustomerOtp(input: SendOtpInput) {
+  await apiPost<unknown>("/auth/otp/send", {
+    phone: input.phone,
+  });
+}
+
+export async function verifyCustomerOtp(input: VerifyOtpInput) {
+  const result = await apiPost<OtpVerifyDto>("/auth/otp/verify", {
+    phone: input.phone,
+    otp: input.otp,
+  });
+  return parseOtpVerifyResponse(result.data);
+}
+
+export async function completeCustomerSignup(input: CompleteSignupInput) {
+  const result = await apiPost<AuthSessionDto>("/auth/signup/complete", {
+    signupToken: input.signupToken,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    ...(input.email ? { email: input.email } : {}),
   });
   return unwrapAuthPayload(result.data, { requireUser: true });
 }

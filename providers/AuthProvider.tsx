@@ -10,14 +10,15 @@ import {
   type ReactNode,
 } from "react";
 import {
+  completeCustomerSignup,
   getCustomerProfile,
-  loginCustomer,
   logoutCustomer,
   refreshCustomerSession,
-  registerCustomer,
+  sendCustomerOtp,
+  verifyCustomerOtp,
+  type CompleteSignupInput,
   type CustomerUser,
-  type LoginInput,
-  type RegisterInput,
+  type OtpVerifyResult,
   type AuthSession,
 } from "../lib/api/auth";
 import {
@@ -33,8 +34,9 @@ type AuthContextValue = {
   status: AuthStatus;
   user: CustomerUser | null;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  sendOtp: (phone: string) => Promise<void>;
+  verifyOtp: (input: { phone: string; otp: string }) => Promise<OtpVerifyResult>;
+  completeSignup: (input: CompleteSignupInput) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -104,17 +106,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  const login = useCallback(
-    async (input: LoginInput) => {
-      const session = await loginCustomer(input);
-      await applySession(session);
+  const sendOtp = useCallback(async (phone: string) => {
+    await sendCustomerOtp({ phone });
+  }, []);
+
+  const verifyOtp = useCallback(
+    async (input: { phone: string; otp: string }) => {
+      const result = await verifyCustomerOtp(input);
+
+      if (result.kind === "session") {
+        await applySession(result.session);
+      }
+
+      return result;
     },
     [applySession],
   );
 
-  const register = useCallback(
-    async (input: RegisterInput) => {
-      const session = await registerCustomer(input);
+  const completeSignup = useCallback(
+    async (input: CompleteSignupInput) => {
+      const session = await completeCustomerSignup(input);
       await applySession(session);
     },
     [applySession],
@@ -134,8 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     status,
     user,
     isAuthenticated: status === "authenticated" && Boolean(user),
-    login,
-    register,
+    sendOtp,
+    verifyOtp,
+    completeSignup,
     refresh,
     logout,
   };

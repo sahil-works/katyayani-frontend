@@ -54,7 +54,7 @@ export default function AccountProfilePage() {
               </p>
               <button
                 type="button"
-                onClick={openLogin}
+                onClick={() => openLogin({ reason: "account" })}
                 className="mt-5 cursor-pointer rounded-xl bg-[#9ea600] px-5 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-[#8f9500]"
               >
                 Sign in

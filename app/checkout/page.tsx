@@ -228,6 +228,14 @@ export default function CheckoutPage() {
   } = useCartSidebar();
   const { isAuthenticated, status: authStatus, user } = useAuth();
   const { openLogin } = useLoginModal();
+  const openCheckoutLogin = useCallback(() => {
+    openLogin({
+      reason: "checkout",
+      onSuccess: () => {
+        void runCheckoutRef.current();
+      },
+    });
+  }, [openLogin]);
   const [address, setAddress] = useState<CheckoutAddress>(INITIAL_ADDRESS);
   const [quote, setQuote] = useState<QuoteViewModel | null>(null);
   const [stage, setStage] = useState<CheckoutStage>("idle");
@@ -239,6 +247,9 @@ export default function CheckoutPage() {
   const paymentCallbackReceivedRef = useRef(false);
   const mountedRef = useRef(false);
   const pollingRunRef = useRef(0);
+  const runCheckoutRef = useRef<(event?: FormEvent<HTMLFormElement>) => Promise<void>>(
+    async () => {},
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -407,7 +418,7 @@ export default function CheckoutPage() {
     setStatusResult(null);
 
     if (!isAuthenticated) {
-      openLogin();
+      openCheckoutLogin();
       setError("Please sign in before checkout.");
       return;
     }
@@ -492,6 +503,8 @@ export default function CheckoutPage() {
     }
   }
 
+  runCheckoutRef.current = runCheckout;
+
   async function retryPayment() {
     if (!orderId || inFlightRef.current || razorpayOpenRef.current) return;
     setError("");
@@ -570,7 +583,7 @@ export default function CheckoutPage() {
               </p>
               <button
                 type="button"
-                onClick={openLogin}
+                onClick={openCheckoutLogin}
                 className="mt-4 rounded-full bg-[#9ea600] px-6 py-2.5 text-[14px] font-semibold text-white"
               >
                 Sign in

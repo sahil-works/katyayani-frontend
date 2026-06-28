@@ -7,11 +7,22 @@ import {
   useContext,
   useEffect,
   useId,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from "react";
 import { getApiErrorMessage } from "../lib/api/errors";
+import {
+  formatIndianMobileDisplay,
+  NAME_MAX_LENGTH,
+  normalizeIndianMobile,
+  OTP_LENGTH,
+  validateMobileInput,
+  validateOtpInput,
+  validateProfileCompletion,
+  type FieldErrors,
+} from "../lib/auth/validation";
 import { useAuth } from "../providers/AuthProvider";
 
 const dancingAccent = Dancing_Script({
@@ -19,15 +30,19 @@ const dancingAccent = Dancing_Script({
   weight: ["600", "700"],
 });
 
-type AuthTab = "login" | "register";
+const RESEND_COOLDOWN_SECONDS = 30;
 
-const NAME_MAX_LENGTH = 80;
-const REGISTER_PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_MAX_LENGTH = 128;
+type AuthStep = "phone" | "otp" | "profile";
+
+export type AuthIntent = {
+  reason?: "checkout" | "account" | "header";
+  onSuccess?: () => void;
+};
 
 type LoginModalContextValue = {
   open: boolean;
-  openLogin: () => void;
+  intent: AuthIntent | null;
+  openLogin: (intent?: AuthIntent) => void;
   closeLogin: () => void;
 };
 
@@ -43,12 +58,20 @@ export function useLoginModal() {
 
 export function LoginModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [intent, setIntent] = useState<AuthIntent | null>(null);
 
-  const openLogin = useCallback(() => setOpen(true), []);
-  const closeLogin = useCallback(() => setOpen(false), []);
+  const openLogin = useCallback((nextIntent?: AuthIntent) => {
+    setIntent(nextIntent ?? null);
+    setOpen(true);
+  }, []);
+
+  const closeLogin = useCallback(() => {
+    setOpen(false);
+    setIntent(null);
+  }, []);
 
   return (
-    <LoginModalContext.Provider value={{ open, openLogin, closeLogin }}>
+    <LoginModalContext.Provider value={{ open, intent, openLogin, closeLogin }}>
       {children}
     </LoginModalContext.Provider>
   );
@@ -72,14 +95,69 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1.5 text-[13px] font-medium text-[#c14747]">{message}</p>;
+}
+
+const inputClassName =
+  "w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20";
+
+const inputErrorClassName =
+  "border-[#e8b4b4] focus:border-[#c14747] focus:ring-[#c14747]/15";
+
+function stepTitle(step: AuthStep) {
+  if (step === "phone") return "Sign in with mobile";
+  if (step === "otp") return "Verify OTP";
+  return "Complete your profile";
+}
+
+function stepDescription(step: AuthStep, phone: string) {
+  if (step === "phone") {
+    return "Enter your Indian mobile number. We will send a one-time password to verify you.";
+  }
+  if (step === "otp") {
+    return `Enter the 6-digit code sent to ${formatIndianMobileDisplay(phone)}.`;
+  }
+  return "Add your name to finish creating your Katyayani account.";
+}
+
 export function LoginModal() {
-  const { open, closeLogin } = useLoginModal();
-  const { login, register, status } = useAuth();
+  const { open, intent, closeLogin } = useLoginModal();
+  const { sendOtp, verifyOtp, completeSignup, status } = useAuth();
   const titleId = useId();
   const descriptionId = useId();
-  const [tab, setTab] = useState<AuthTab>("login");
-  const [error, setError] = useState("");
+
+  const [step, setStep] = useState<AuthStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [normalizedPhone, setNormalizedPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [signupToken, setSignupToken] = useState("");
+  const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const closedRef = useRef(false);
+
+  const resetForm = useCallback(() => {
+    setStep("phone");
+    setPhone("");
+    setNormalizedPhone("");
+    setOtp("");
+    setSignupToken("");
+    setFormError("");
+    setFieldErrors({});
+    setIsSubmitting(false);
+    setResendSeconds(0);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      closedRef.current = false;
+      return;
+    }
+    resetForm();
+  }, [open, resetForm]);
 
   useEffect(() => {
     if (!open) return;
@@ -99,84 +177,183 @@ export function LoginModal() {
   }, [open, closeLogin]);
 
   useEffect(() => {
-    if (!open) return;
-    setError("");
-  }, [open, tab]);
+    if (!open || step !== "otp" || resendSeconds <= 0) return;
 
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    const timer = window.setInterval(() => {
+      setResendSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [open, step, resendSeconds]);
+
+  function finishAuth() {
+    const onSuccess = intent?.onSuccess;
+    closeLogin();
+    onSuccess?.();
+  }
+
+  async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
-    setIsSubmitting(true);
+    setFormError("");
+    setFieldErrors({});
 
-    const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-
-    if (!email || !password) {
-      setError("Enter your email and password.");
-      setIsSubmitting(false);
+    const mobileErrors = validateMobileInput(phone);
+    if (mobileErrors) {
+      setFieldErrors(mobileErrors);
       return;
     }
 
+    const normalized = normalizeIndianMobile(phone);
+    if (!normalized) {
+      setFieldErrors({ phone: "Enter a valid 10-digit Indian mobile number." });
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      await login({
-        email,
-        password,
-      });
-      closeLogin();
+      await sendOtp(normalized);
+      if (closedRef.current) return;
+
+      setNormalizedPhone(normalized);
+      setOtp("");
+      setStep("otp");
+      setResendSeconds(RESEND_COOLDOWN_SECONDS);
     } catch (authError) {
-      setError(getApiErrorMessage(authError));
+      setFormError(getApiErrorMessage(authError));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+  async function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
+    setFormError("");
+    setFieldErrors({});
+
+    const otpErrors = validateOtpInput(otp);
+    if (otpErrors) {
+      setFieldErrors(otpErrors);
+      return;
+    }
+
     setIsSubmitting(true);
+
+    try {
+      const result = await verifyOtp({
+        phone: normalizedPhone,
+        otp: otp.replace(/\D/g, ""),
+      });
+      if (closedRef.current) return;
+
+      if (result.kind === "session") {
+        finishAuth();
+        return;
+      }
+
+      setSignupToken(result.signupToken);
+      setStep("profile");
+    } catch (authError) {
+      setFormError(getApiErrorMessage(authError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleCompleteProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError("");
+    setFieldErrors({});
 
     const formData = new FormData(event.currentTarget);
     const firstName = String(formData.get("firstName") ?? "").trim();
     const lastName = String(formData.get("lastName") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
 
-    if (!firstName || !lastName || !email || !password) {
-      setError("Enter your first name, last name, email, and password.");
-      setIsSubmitting(false);
+    const profileErrors = validateProfileCompletion({
+      firstName,
+      lastName,
+      email,
+    });
+    if (profileErrors) {
+      setFieldErrors(profileErrors);
       return;
     }
 
-    if (firstName.length > NAME_MAX_LENGTH || lastName.length > NAME_MAX_LENGTH) {
-      setError("First name and last name must be 80 characters or less.");
-      setIsSubmitting(false);
+    if (!signupToken) {
+      setFormError("Your verification session expired. Please request a new OTP.");
+      setStep("phone");
       return;
     }
 
-    if (
-      password.length < REGISTER_PASSWORD_MIN_LENGTH ||
-      password.length > PASSWORD_MAX_LENGTH
-    ) {
-      setError("Password must be between 8 and 128 characters.");
-      setIsSubmitting(false);
-      return;
-    }
+    setIsSubmitting(true);
 
     try {
-      await register({
+      await completeSignup({
+        signupToken,
         firstName,
         lastName,
-        email,
-        password,
+        email: email || undefined,
       });
-      closeLogin();
+      if (closedRef.current) return;
+      finishAuth();
     } catch (authError) {
-      setError(getApiErrorMessage(authError));
+      setFormError(getApiErrorMessage(authError));
     } finally {
       setIsSubmitting(false);
     }
   }
+
+  async function handleResendOtp() {
+    if (resendSeconds > 0 || isSubmitting || !normalizedPhone) return;
+
+    setFormError("");
+    setFieldErrors({});
+    setIsSubmitting(true);
+
+    try {
+      await sendOtp(normalizedPhone);
+      if (closedRef.current) return;
+      setOtp("");
+      setResendSeconds(RESEND_COOLDOWN_SECONDS);
+    } catch (authError) {
+      setFormError(getApiErrorMessage(authError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleClose() {
+    closedRef.current = true;
+    closeLogin();
+  }
+
+  function goBack() {
+    setFormError("");
+    setFieldErrors({});
+    if (step === "profile") {
+      setStep("otp");
+      return;
+    }
+    if (step === "otp") {
+      setStep("phone");
+      setOtp("");
+      setResendSeconds(0);
+    }
+  }
+
+  const submitLabel =
+    step === "phone"
+      ? isSubmitting
+        ? "Sending OTP..."
+        : "Send OTP"
+      : step === "otp"
+        ? isSubmitting
+          ? "Verifying..."
+          : "Verify OTP"
+        : isSubmitting
+          ? "Creating account..."
+          : "Complete sign up";
 
   return (
     <>
@@ -188,7 +365,7 @@ export function LoginModal() {
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0"
         }`}
-        onClick={closeLogin}
+        onClick={handleClose}
       />
 
       <div
@@ -208,16 +385,16 @@ export function LoginModal() {
         >
           <button
             type="button"
-            onClick={closeLogin}
+            onClick={handleClose}
             className="absolute right-3 top-3 cursor-pointer rounded-xl p-2.5 text-[#424242] transition-colors hover:bg-[#f4f5eb] hover:text-[#1a1a1a]"
-            aria-label="Close login"
+            aria-label="Close sign in"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
 
           <div className="px-7 pb-8 pt-9 sm:px-9 sm:pt-10">
             <p id={descriptionId} className="sr-only">
-              Customer login and registration for Katyayani storefront.
+              {stepDescription(step, normalizedPhone || phone)}
             </p>
 
             <div className="pr-8">
@@ -230,122 +407,186 @@ export function LoginModal() {
                 id={titleId}
                 className="mt-1 text-lg font-semibold tracking-tight text-[#1f1f1f]"
               >
-                {tab === "login" ? "Sign in to Katyayani" : "Create your account"}
+                {stepTitle(step)}
               </h2>
               <p className="mt-2 text-[15px] leading-relaxed text-[#5c5c5c]">
-                Customer auth is separate from admin access. Access tokens stay
-                in memory, with refresh kept to this browser tab.
+                {stepDescription(step, normalizedPhone || phone)}
               </p>
             </div>
 
-            <div className="mt-7 flex rounded-full bg-[#f0f2e8] p-1">
+            {step !== "phone" ? (
               <button
                 type="button"
-                onClick={() => setTab("login")}
-                className={`flex flex-1 items-center justify-center rounded-full py-2.5 text-[15px] font-medium transition-all ${
-                  tab === "login"
-                    ? "bg-white text-[#2a2a2a] shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
-                    : "text-[#666] hover:text-[#333]"
-                }`}
+                onClick={goBack}
+                disabled={isSubmitting}
+                className="mt-5 text-[14px] font-medium text-[#6f7600] transition-colors hover:text-[#4f5500] disabled:opacity-60"
               >
-                Login
+                ← Back
               </button>
-              <button
-                type="button"
-                onClick={() => setTab("register")}
-                className={`flex flex-1 items-center justify-center rounded-full py-2.5 text-[15px] font-medium transition-all ${
-                  tab === "register"
-                    ? "bg-white text-[#2a2a2a] shadow-[0_2px_12px_rgba(0,0,0,0.08)]"
-                    : "text-[#666] hover:text-[#333]"
-                }`}
-              >
-                Register
-              </button>
-            </div>
+            ) : null}
 
             <form
               className="mt-6 space-y-4"
-              onSubmit={tab === "login" ? handleLogin : handleRegister}
+              onSubmit={(event) => {
+                if (step === "phone") void handleSendOtp(event);
+                else if (step === "otp") void handleVerifyOtp(event);
+                else void handleCompleteProfile(event);
+              }}
             >
-              {tab === "register" ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="auth-first-name"
-                      className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
-                    >
-                      First name
-                    </label>
+              {step === "phone" ? (
+                <div>
+                  <label
+                    htmlFor="auth-phone"
+                    className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                  >
+                    Mobile number
+                  </label>
+                  <div className="flex overflow-hidden rounded-xl border border-[#e3e5d8] bg-[#fafbf7] focus-within:border-[#9ea600] focus-within:bg-white focus-within:ring-[3px] focus-within:ring-[#9ea600]/20">
+                    <span className="flex items-center border-r border-[#e3e5d8] px-4 text-[16px] text-[#666]">
+                      +91
+                    </span>
                     <input
-                      id="auth-first-name"
-                      name="firstName"
-                      type="text"
-                      autoComplete="given-name"
-                      required
-                      minLength={1}
-                      maxLength={NAME_MAX_LENGTH}
-                      className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
+                      id="auth-phone"
+                      name="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      placeholder="98765 43210"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      maxLength={14}
+                      className="w-full bg-transparent px-4 py-3 text-[16px] text-[#222] outline-none"
+                      aria-invalid={Boolean(fieldErrors.phone)}
+                      aria-describedby={fieldErrors.phone ? "auth-phone-error" : undefined}
                     />
                   </div>
-                  <div>
-                    <label
-                      htmlFor="auth-last-name"
-                      className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                  <FieldError message={fieldErrors.phone} />
+                  {fieldErrors.phone ? (
+                    <span id="auth-phone-error" className="sr-only">
+                      {fieldErrors.phone}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {step === "otp" ? (
+                <div>
+                  <label
+                    htmlFor="auth-otp"
+                    className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                  >
+                    One-time password
+                  </label>
+                  <input
+                    id="auth-otp"
+                    name="otp"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(event) =>
+                      setOtp(event.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))
+                    }
+                    maxLength={OTP_LENGTH}
+                    className={`${inputClassName} text-center tracking-[0.35em] ${
+                      fieldErrors.otp ? inputErrorClassName : ""
+                    }`}
+                    aria-invalid={Boolean(fieldErrors.otp)}
+                  />
+                  <FieldError message={fieldErrors.otp} />
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-[13px] text-[#666]">
+                      Didn&apos;t receive the code?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void handleResendOtp()}
+                      disabled={resendSeconds > 0 || isSubmitting}
+                      className="text-[13px] font-medium text-[#6f7600] transition-colors hover:text-[#4f5500] disabled:cursor-not-allowed disabled:text-[#999]"
                     >
-                      Last name
-                    </label>
-                    <input
-                      id="auth-last-name"
-                      name="lastName"
-                      type="text"
-                      autoComplete="family-name"
-                      required
-                      minLength={1}
-                      maxLength={NAME_MAX_LENGTH}
-                      className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
-                    />
+                      {resendSeconds > 0
+                        ? `Resend in ${resendSeconds}s`
+                        : "Resend OTP"}
+                    </button>
                   </div>
                 </div>
               ) : null}
 
-              <div>
-                <label
-                  htmlFor="auth-email"
-                  className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
-                >
-                  Email
-                </label>
-                <input
-                  id="auth-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
-                />
-              </div>
+              {step === "profile" ? (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label
+                        htmlFor="auth-first-name"
+                        className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                      >
+                        First name
+                      </label>
+                      <input
+                        id="auth-first-name"
+                        name="firstName"
+                        type="text"
+                        autoComplete="given-name"
+                        required
+                        maxLength={NAME_MAX_LENGTH}
+                        className={`${inputClassName} ${
+                          fieldErrors.firstName ? inputErrorClassName : ""
+                        }`}
+                        aria-invalid={Boolean(fieldErrors.firstName)}
+                      />
+                      <FieldError message={fieldErrors.firstName} />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="auth-last-name"
+                        className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                      >
+                        Last name
+                      </label>
+                      <input
+                        id="auth-last-name"
+                        name="lastName"
+                        type="text"
+                        autoComplete="family-name"
+                        required
+                        maxLength={NAME_MAX_LENGTH}
+                        className={`${inputClassName} ${
+                          fieldErrors.lastName ? inputErrorClassName : ""
+                        }`}
+                        aria-invalid={Boolean(fieldErrors.lastName)}
+                      />
+                      <FieldError message={fieldErrors.lastName} />
+                    </div>
+                  </div>
 
-              <div>
-                <label
-                  htmlFor="auth-password"
-                  className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
-                >
-                  Password
-                </label>
-                <input
-                  id="auth-password"
-                  name="password"
-                  type="password"
-                  autoComplete={tab === "login" ? "current-password" : "new-password"}
-                  required
-                  minLength={tab === "register" ? REGISTER_PASSWORD_MIN_LENGTH : 1}
-                  maxLength={PASSWORD_MAX_LENGTH}
-                  className="w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20"
-                />
-              </div>
+                  <div>
+                    <label
+                      htmlFor="auth-email"
+                      className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
+                    >
+                      Email <span className="normal-case tracking-normal">(optional)</span>
+                    </label>
+                    <input
+                      id="auth-email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      className={`${inputClassName} ${
+                        fieldErrors.email ? inputErrorClassName : ""
+                      }`}
+                      aria-invalid={Boolean(fieldErrors.email)}
+                    />
+                    <FieldError message={fieldErrors.email} />
+                  </div>
+                </>
+              ) : null}
 
-              {error ? (
-                <p className="text-[13px] font-medium text-[#c14747]">{error}</p>
+              {formError ? (
+                <p className="text-[13px] font-medium text-[#c14747]" role="alert">
+                  {formError}
+                </p>
               ) : null}
 
               <button
@@ -353,11 +594,7 @@ export function LoginModal() {
                 disabled={isSubmitting || status === "initializing"}
                 className="mt-2 w-full cursor-pointer rounded-xl bg-[#9ea600] py-3.5 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(158,166,0,0.35)] transition-[transform,box-shadow] hover:bg-[#8f9500] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting
-                  ? "Please wait..."
-                  : tab === "login"
-                    ? "Sign in"
-                    : "Create account"}
+                {submitLabel}
               </button>
             </form>
           </div>
