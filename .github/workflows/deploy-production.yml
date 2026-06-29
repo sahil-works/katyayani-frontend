@@ -3,7 +3,7 @@ name: Deploy Frontend production
 on:
   push:
     branches:
-      - dev
+      - main
 
 jobs:
   deploy:
@@ -26,7 +26,7 @@ jobs:
             cd /opt/katyayani-storefront/production
 
             git fetch origin
-            git reset --hard origin/dev
+            git reset --hard origin/main
 
             chmod +x scripts/deploy-production.sh
             ./scripts/deploy-production.sh
