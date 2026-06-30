@@ -53,15 +53,16 @@ export type VerifyOtpInput = {
 };
 
 export type CompleteSignupInput = {
-  signupToken: string;
+  signupToken?: string;
+  phone?: string;
   firstName: string;
   lastName: string;
   email?: string;
 };
 
 export type OtpVerifyResult =
-  | { kind: "session"; session: AuthSession }
-  | { kind: "profile_required"; signupToken: string };
+  | { requiresSignup: true; signupToken?: string }
+  | { requiresSignup: false; session: AuthSession };
 
 function getInitials(name: string, email?: string) {
   const source = name.trim() || email?.split("@")[0] || "Customer";
@@ -142,6 +143,7 @@ function unwrapAuthPayload(
 }
 
 type OtpVerifyDto = AuthSessionDto & {
+  signupRequired?: boolean;
   isNewUser?: boolean;
   requiresProfile?: boolean;
   requiresProfileCompletion?: boolean;
@@ -150,30 +152,40 @@ type OtpVerifyDto = AuthSessionDto & {
 };
 
 function parseOtpVerifyResponse(payload: OtpVerifyDto | null | undefined): OtpVerifyResult {
-  const signupToken = payload?.signupToken ?? payload?.signup_token;
-  const requiresProfile =
-    payload?.isNewUser ??
-    payload?.requiresProfile ??
-    payload?.requiresProfileCompletion;
-  const accessToken =
-    payload?.accessToken ?? payload?.access_token ?? payload?.token;
-
-  if (requiresProfile && signupToken) {
-    return { kind: "profile_required", signupToken };
+  if (!payload) {
+    throw new Error("Unexpected OTP verification response");
   }
 
-  if (accessToken) {
+  const signupToken = payload.signupToken ?? payload.signup_token;
+  const signupRequired =
+    payload.signupRequired === true ||
+    Boolean(
+      signupToken &&
+        (payload.isNewUser === true ||
+          payload.requiresProfile === true ||
+          payload.requiresProfileCompletion === true),
+    );
+
+  if (signupRequired) {
+    return signupToken ? { requiresSignup: true, signupToken } : { requiresSignup: true };
+  }
+
+  const accessToken =
+    payload.accessToken ?? payload.access_token ?? payload.token;
+  const user = payload.user ?? payload.customer;
+
+  if (accessToken && user) {
     return {
-      kind: "session",
+      requiresSignup: false,
       session: unwrapAuthPayload(payload, { requireUser: true }),
     };
   }
 
   if (signupToken) {
-    return { kind: "profile_required", signupToken };
+    return { requiresSignup: true, signupToken };
   }
 
-  throw new Error("OTP verification response was incomplete.");
+  throw new Error("Unexpected OTP verification response");
 }
 
 export async function sendCustomerOtp(input: SendOtpInput) {
@@ -191,8 +203,13 @@ export async function verifyCustomerOtp(input: VerifyOtpInput) {
 }
 
 export async function completeCustomerSignup(input: CompleteSignupInput) {
+  if (!input.signupToken && !input.phone) {
+    throw new Error("Signup completion requires a verified phone or signup token.");
+  }
+
   const result = await apiPost<AuthSessionDto>("/auth/signup/complete", {
-    signupToken: input.signupToken,
+    ...(input.signupToken ? { signupToken: input.signupToken } : {}),
+    ...(input.phone ? { phone: input.phone } : {}),
     firstName: input.firstName,
     lastName: input.lastName,
     ...(input.email ? { email: input.email } : {}),

@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (input: { phone: string; otp: string }) => {
       const result = await verifyCustomerOtp(input);
 
-      if (result.kind === "session") {
+      if (!result.requiresSignup) {
         await applySession(result.session);
       }
 

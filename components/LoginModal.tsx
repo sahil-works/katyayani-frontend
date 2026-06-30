@@ -246,12 +246,12 @@ export function LoginModal() {
       });
       if (closedRef.current) return;
 
-      if (result.kind === "session") {
+      if (!result.requiresSignup) {
         finishAuth();
         return;
       }
 
-      setSignupToken(result.signupToken);
+      setSignupToken(result.signupToken ?? "");
       setStep("profile");
     } catch (authError) {
       setFormError(getApiErrorMessage(authError));
@@ -280,7 +280,7 @@ export function LoginModal() {
       return;
     }
 
-    if (!signupToken) {
+    if (!signupToken && !normalizedPhone) {
       setFormError("Your verification session expired. Please request a new OTP.");
       setStep("phone");
       return;
@@ -290,7 +290,8 @@ export function LoginModal() {
 
     try {
       await completeSignup({
-        signupToken,
+        ...(signupToken ? { signupToken } : {}),
+        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
         firstName,
         lastName,
         email: email || undefined,
