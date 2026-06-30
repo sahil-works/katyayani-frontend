@@ -6,26 +6,28 @@ on:
       - dev
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Deploy
+      - name: Build Image
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /opt/katyayani-storefront
-            git fetch origin
-            git reset --hard origin/dev
-            chmod +x scripts/deploy-staging.sh
-            ./scripts/deploy-staging.sh
-          EOF
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/katyayani-frontend:staging \
+            -t ghcr.io/${{ github.repository_owner }}/katyayani-frontend:${{ github.sha }} \
+            .
+
+      - name: Push Image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/katyayani-frontend:staging
+          docker push ghcr.io/${{ github.repository_owner }}/katyayani-frontend:${{ github.sha }}
