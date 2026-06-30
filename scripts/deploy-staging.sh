@@ -1,36 +1,31 @@
-#!/bin/bash
-set -e
+name: Deploy Frontend Staging
 
-APP_NAME=katyayani-storefront
-PORT=3200
-PARAM_PATH=/katyayani/staging/frontend
+on:
+  push:
+    branches:
+      - dev
 
-APP_URL=$(aws ssm get-parameter \
-  --name "$PARAM_PATH/NEXT_PUBLIC_APP_URL" \
-  --query Parameter.Value \
-  --output text)
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-API_URL=$(aws ssm get-parameter \
-  --name "$PARAM_PATH/NEXT_PUBLIC_API_BASE_URL" \
-  --query Parameter.Value \
-  --output text)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-RAZORPAY_KEY=$(aws ssm get-parameter \
-  --name "$PARAM_PATH/NEXT_PUBLIC_RAZORPAY_KEY_ID" \
-  --query Parameter.Value \
-  --output text)
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-docker build \
-  --build-arg NEXT_PUBLIC_APP_URL="$APP_URL" \
-  --build-arg NEXT_PUBLIC_API_BASE_URL="$API_URL" \
-  --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$RAZORPAY_KEY" \
-  -t ${APP_NAME}:staging .
-
-docker stop $APP_NAME || true
-docker rm $APP_NAME || true
-
-docker run -d \
-  --name $APP_NAME \
-  --restart unless-stopped \
-  -p ${PORT}:3000 \
-  ${APP_NAME}:staging
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /opt/katyayani-storefront
+            git fetch origin
+            git reset --hard origin/dev
+            chmod +x scripts/deploy-staging.sh
+            ./scripts/deploy-staging.sh
+          EOF
