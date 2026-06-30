@@ -18,24 +18,32 @@ jobs:
           set -x
 
           mkdir -p ~/.ssh
+
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
           echo "STEP1 OK"
           ls -lah ~/.ssh
 
-          chmod 600 ~/.ssh/id_ed25519
-          echo "STEP2 OK"
+          echo "HOST LENGTH:"
+          echo -n "${{ secrets.EC2_HOST }}" | wc -c
 
-          echo "HOST=${{ secrets.EC2_HOST }}"
-          echo "USER=${{ secrets.EC2_USER }}"
+          echo "USER LENGTH:"
+          echo -n "${{ secrets.EC2_USER }}" | wc -c
+
+          echo "Testing host..."
+          ping -c 2 ${{ secrets.EC2_HOST }}
 
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-          echo "STEP3 OK"
+          echo "SSH setup complete"
 
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=no \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+
             cd /opt/katyayani-storefront
 
             git fetch origin
