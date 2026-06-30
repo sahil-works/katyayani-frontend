@@ -15,10 +15,23 @@ jobs:
 
       - name: Setup SSH
         run: |
+          set -x
+
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
+
+          echo "STEP1 OK"
+          ls -lah ~/.ssh
+
           chmod 600 ~/.ssh/id_ed25519
+          echo "STEP2 OK"
+
+          echo "HOST=${{ secrets.EC2_HOST }}"
+          echo "USER=${{ secrets.EC2_USER }}"
+
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+          echo "STEP3 OK"
 
       - name: Deploy
         run: |
