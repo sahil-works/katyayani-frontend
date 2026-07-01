@@ -152,6 +152,16 @@ type OtpVerifyDto = AuthSessionDto & {
 };
 
 function parseOtpVerifyResponse(payload: OtpVerifyDto | null | undefined): OtpVerifyResult {
+  console.log("=================================");
+  console.log("AUTH BUILD MARKER: 2026-07-02-V1");
+  console.log("parseOtpVerifyResponse payload:", payload);
+  console.log("=================================");
+
+  if (typeof window !== "undefined") {
+    (window as Window & { __AUTH_BUILD_MARKER__?: string }).__AUTH_BUILD_MARKER__ =
+      "2026-07-02-V1";
+  }
+
   if (!payload) {
     throw new Error("Unexpected OTP verification response");
   }
