@@ -260,3 +260,29 @@ export async function updateCustomerProfile(input: UpdateProfileInput) {
 
   return normalizeCustomerUser(resolveProfileUser(result.data));
 }
+
+export async function requestEmailChange(email: string) {
+  await apiPost<unknown>("/auth/email/change/request", { email }, { auth: true });
+}
+
+export async function confirmEmailChange(email: string, otp: string) {
+  const result = await apiPost<ProfileResponseDto>(
+    "/auth/email/change/confirm",
+    { email, otp },
+    { auth: true },
+  );
+  return normalizeCustomerUser(resolveProfileUser(result.data));
+}
+
+export async function requestPhoneChange(phone: string) {
+  await apiPost<unknown>("/auth/phone/change/request", { phone }, { auth: true });
+}
+
+export async function confirmPhoneChange(phone: string, otp: string) {
+  const result = await apiPost<ProfileResponseDto>(
+    "/auth/phone/change/confirm",
+    { phone, otp },
+    { auth: true },
+  );
+  return normalizeCustomerUser(resolveProfileUser(result.data));
+}

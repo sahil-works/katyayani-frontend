@@ -268,12 +268,10 @@ export function LoginModal() {
     const formData = new FormData(event.currentTarget);
     const firstName = String(formData.get("firstName") ?? "").trim();
     const lastName = String(formData.get("lastName") ?? "").trim();
-    const email = String(formData.get("email") ?? "").trim();
 
     const profileErrors = validateProfileCompletion({
       firstName,
       lastName,
-      email,
     });
     if (profileErrors) {
       setFieldErrors(profileErrors);
@@ -294,7 +292,6 @@ export function LoginModal() {
         ...(normalizedPhone ? { phone: normalizedPhone } : {}),
         firstName,
         lastName,
-        email: email || undefined,
       });
       if (closedRef.current) return;
       finishAuth();
@@ -561,26 +558,9 @@ export function LoginModal() {
                       <FieldError message={fieldErrors.lastName} />
                     </div>
                   </div>
-
-                  <div>
-                    <label
-                      htmlFor="auth-email"
-                      className="mb-1.5 block text-[13px] font-medium uppercase tracking-[0.06em] text-[#7a7a7a]"
-                    >
-                      Email <span className="normal-case tracking-normal">(optional)</span>
-                    </label>
-                    <input
-                      id="auth-email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      className={`${inputClassName} ${
-                        fieldErrors.email ? inputErrorClassName : ""
-                      }`}
-                      aria-invalid={Boolean(fieldErrors.email)}
-                    />
-                    <FieldError message={fieldErrors.email} />
-                  </div>
+                  <p className="text-[13px] leading-relaxed text-[#6f6f6f]">
+                    You can add and verify an email later from your profile.
+                  </p>
                 </>
               ) : null}
 

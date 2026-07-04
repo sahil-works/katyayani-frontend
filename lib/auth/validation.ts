@@ -58,14 +58,18 @@ export function validateOtpInput(input: string): FieldErrors<"otp"> | null {
   return null;
 }
 
+export function isValidEmail(input: string): boolean {
+  return EMAIL_PATTERN.test(input.trim());
+}
+
 export function validateProfileCompletion(input: {
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
 }): FieldErrors<"firstName" | "lastName" | "email"> | null {
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
-  const email = input.email.trim();
+  const email = (input.email ?? "").trim();
   const errors: FieldErrors<"firstName" | "lastName" | "email"> = {};
 
   if (!firstName) {

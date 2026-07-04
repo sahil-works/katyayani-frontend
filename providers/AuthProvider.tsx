@@ -11,9 +11,13 @@ import {
 } from "react";
 import {
   completeCustomerSignup,
+  confirmEmailChange,
+  confirmPhoneChange,
   getCustomerProfile,
   logoutCustomer,
   refreshCustomerSession,
+  requestEmailChange,
+  requestPhoneChange,
   sendCustomerOtp,
   updateCustomerProfile,
   verifyCustomerOtp,
@@ -40,6 +44,10 @@ type AuthContextValue = {
   verifyOtp: (input: { phone: string; otp: string }) => Promise<OtpVerifyResult>;
   completeSignup: (input: CompleteSignupInput) => Promise<void>;
   updateProfile: (input: UpdateProfileInput) => Promise<CustomerUser>;
+  requestEmailOtp: (email: string) => Promise<void>;
+  confirmEmailOtp: (email: string, otp: string) => Promise<CustomerUser>;
+  requestPhoneOtp: (phone: string) => Promise<void>;
+  confirmPhoneOtp: (phone: string, otp: string) => Promise<CustomerUser>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -140,6 +148,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return updated;
   }, []);
 
+  const requestEmailOtp = useCallback(async (email: string) => {
+    await requestEmailChange(email);
+  }, []);
+
+  const confirmEmailOtp = useCallback(async (email: string, otp: string) => {
+    const updated = await confirmEmailChange(email, otp);
+    setUser(updated);
+    return updated;
+  }, []);
+
+  const requestPhoneOtp = useCallback(async (phone: string) => {
+    await requestPhoneChange(phone);
+  }, []);
+
+  const confirmPhoneOtp = useCallback(async (phone: string, otp: string) => {
+    const updated = await confirmPhoneChange(phone, otp);
+    setUser(updated);
+    return updated;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await logoutCustomer();
@@ -158,6 +186,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     verifyOtp,
     completeSignup,
     updateProfile,
+    requestEmailOtp,
+    confirmEmailOtp,
+    requestPhoneOtp,
+    confirmPhoneOtp,
     refresh,
     logout,
   };
