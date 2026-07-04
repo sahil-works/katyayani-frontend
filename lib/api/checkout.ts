@@ -114,6 +114,7 @@ export type OrderStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "EXPIRED
 
 type OrderStatusApiResponse = {
   orderId?: string;
+  orderNumber?: string;
   orderStatus?: string;
   status?: OrderStatus | string;
   paymentStatus?: OrderStatus | string;
@@ -174,6 +175,7 @@ export type RazorpayPrepareViewModel = {
 
 export type OrderStatusViewModel = {
   orderId?: string;
+  orderNumber?: string;
   status: OrderStatus;
   retryable: boolean;
   message: string;
@@ -312,6 +314,7 @@ function normalizeOrderStatus(payload: OrderStatusApiResponse): OrderStatusViewM
 
   return {
     orderId: payload.orderId,
+    orderNumber: payload.orderNumber,
     status,
     retryable: Boolean(payload.retryable),
     message:

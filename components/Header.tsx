@@ -112,7 +112,7 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [profileMenuOpen]);
 
-  if (pathname === "/checkout") {
+  if (pathname === "/checkout" || pathname.startsWith("/checkout/")) {
     return null;
   }
 

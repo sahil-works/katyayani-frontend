@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useCartSidebar } from "../../components/CartSidebar";
 import { useLoginModal } from "../../components/LoginModal";
@@ -218,6 +219,7 @@ function CheckoutResult({
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const {
     lines,
     invalidLines,
@@ -333,6 +335,11 @@ export default function CheckoutPage() {
       if (isTerminalStatus(nextStatus.status)) {
         if (nextStatus.status === "PAID") {
           await clearCart();
+          if (!isActivePoll()) return nextStatus;
+          router.replace(
+            `/checkout/success?orderId=${encodeURIComponent(id)}`,
+          );
+          return nextStatus;
         }
         if (!isActivePoll()) return nextStatus;
         setStage(stageFromStatus(nextStatus.status));
@@ -354,7 +361,7 @@ export default function CheckoutPage() {
     setStatusResult(expired);
     setStage("expired");
     return expired;
-  }, [clearCart]);
+  }, [clearCart, router]);
 
   async function openRazorpay({
     preparedPayment,
