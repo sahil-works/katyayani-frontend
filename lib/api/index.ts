@@ -4,6 +4,7 @@ export * from "./categories";
 export * from "./checkout";
 export * from "./client";
 export * from "./errors";
+export * from "./orders";
 export * from "./products";
 export * from "./queryKeys";
 export * from "./queryOptions";

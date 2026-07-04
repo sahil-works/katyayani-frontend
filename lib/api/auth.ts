@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPatch, apiPost } from "./client";
 
 export type CustomerUserDto = {
   id: string;
@@ -7,6 +7,8 @@ export type CustomerUserDto = {
   lastName?: string | null;
   email?: string | null;
   phone?: string | null;
+  emailVerified?: boolean | null;
+  phoneVerified?: boolean | null;
   role?: string | null;
 };
 
@@ -33,6 +35,8 @@ export type CustomerUser = {
   lastName?: string;
   email?: string;
   phone?: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
   initials: string;
 };
 
@@ -113,6 +117,8 @@ export function normalizeCustomerUser(user: CustomerUserDto): CustomerUser {
     lastName,
     email: user.email ?? undefined,
     phone: user.phone ?? undefined,
+    emailVerified: Boolean(user.emailVerified),
+    phoneVerified: Boolean(user.phoneVerified),
     initials: getInitials(fullName, user.email ?? undefined),
   };
 }
@@ -152,16 +158,6 @@ type OtpVerifyDto = AuthSessionDto & {
 };
 
 function parseOtpVerifyResponse(payload: OtpVerifyDto | null | undefined): OtpVerifyResult {
-  console.log("=================================");
-  console.log("AUTH BUILD MARKER: 2026-07-02-V1");
-  console.log("parseOtpVerifyResponse payload:", payload);
-  console.log("=================================");
-
-  if (typeof window !== "undefined") {
-    (window as Window & { __AUTH_BUILD_MARKER__?: string }).__AUTH_BUILD_MARKER__ =
-      "2026-07-02-V1";
-  }
-
   if (!payload) {
     throw new Error("Unexpected OTP verification response");
   }
@@ -243,6 +239,24 @@ export async function getCustomerProfile() {
   const result = await apiGet<ProfileResponseDto>("/users/me", undefined, {
     auth: true,
   });
+
+  return normalizeCustomerUser(resolveProfileUser(result.data));
+}
+
+export type UpdateProfileInput = {
+  firstName: string;
+  lastName: string;
+};
+
+export async function updateCustomerProfile(input: UpdateProfileInput) {
+  const result = await apiPatch<ProfileResponseDto>(
+    "/users/me",
+    {
+      firstName: input.firstName,
+      lastName: input.lastName,
+    },
+    { auth: true },
+  );
 
   return normalizeCustomerUser(resolveProfileUser(result.data));
 }

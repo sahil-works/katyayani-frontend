@@ -15,11 +15,13 @@ import {
   logoutCustomer,
   refreshCustomerSession,
   sendCustomerOtp,
+  updateCustomerProfile,
   verifyCustomerOtp,
   type CompleteSignupInput,
   type CustomerUser,
   type OtpVerifyResult,
   type AuthSession,
+  type UpdateProfileInput,
 } from "../lib/api/auth";
 import {
   clearAuthTokens,
@@ -37,6 +39,7 @@ type AuthContextValue = {
   sendOtp: (phone: string) => Promise<void>;
   verifyOtp: (input: { phone: string; otp: string }) => Promise<OtpVerifyResult>;
   completeSignup: (input: CompleteSignupInput) => Promise<void>;
+  updateProfile: (input: UpdateProfileInput) => Promise<CustomerUser>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -131,6 +134,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const updateProfile = useCallback(async (input: UpdateProfileInput) => {
+    const updated = await updateCustomerProfile(input);
+    setUser(updated);
+    return updated;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await logoutCustomer();
@@ -148,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sendOtp,
     verifyOtp,
     completeSignup,
+    updateProfile,
     refresh,
     logout,
   };
