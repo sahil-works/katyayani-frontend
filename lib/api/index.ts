@@ -1,3 +1,4 @@
+export * from "./contact";
 export * from "./addresses";
 export * from "./auth";
 export * from "./cart";
