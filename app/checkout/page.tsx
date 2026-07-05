@@ -18,6 +18,13 @@ import {
   type QuoteViewModel,
   type RazorpayPrepareViewModel,
 } from "../../lib/api/checkout";
+import {
+  createAddress,
+  formatAddressLines,
+  getAddresses,
+  type Address,
+} from "../../lib/api/addresses";
+import { addressToCheckout, checkoutToAddressInput } from "../../lib/addresses/mappers";
 import { getApiErrorMessage, normalizeApiError } from "../../lib/api/errors";
 import { useAuth } from "../../providers/AuthProvider";
 
@@ -239,6 +246,10 @@ export default function CheckoutPage() {
     });
   }, [openLogin]);
   const [address, setAddress] = useState<CheckoutAddress>(INITIAL_ADDRESS);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
+  const [saveNewAddress, setSaveNewAddress] = useState(true);
   const [quote, setQuote] = useState<QuoteViewModel | null>(null);
   const [stage, setStage] = useState<CheckoutStage>("idle");
   const [error, setError] = useState("");
@@ -276,6 +287,67 @@ export default function CheckoutPage() {
         user.name.split(" ").slice(1).join(" "),
     }));
   }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedAddresses([]);
+      setSelectedAddressId("new");
+      return;
+    }
+
+    let cancelled = false;
+    setAddressesLoading(true);
+
+    void getAddresses()
+      .then((list) => {
+        if (cancelled) return;
+        setSavedAddresses(list);
+        const defaultAddress = list.find((item) => item.isDefault) ?? list[0];
+        if (defaultAddress) {
+          setSelectedAddressId(defaultAddress.id);
+          setAddress((prev) =>
+            addressToCheckout(defaultAddress, prev.email || user?.email || ""),
+          );
+        } else {
+          setSelectedAddressId("new");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSavedAddresses([]);
+          setSelectedAddressId("new");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAddressesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.email]);
+
+  function selectSavedAddress(id: string) {
+    const saved = savedAddresses.find((item) => item.id === id);
+    if (!saved) return;
+    setSelectedAddressId(id);
+    setAddress((prev) => addressToCheckout(saved, prev.email || user?.email || ""));
+  }
+
+  function useNewAddress() {
+    setSelectedAddressId("new");
+    setAddress((prev) => ({
+      ...INITIAL_ADDRESS,
+      email: prev.email || user?.email || "",
+      phone: prev.phone || user?.phone || "",
+      firstName: prev.firstName || user?.firstName || user?.name.split(" ")[0] || "",
+      lastName:
+        prev.lastName ||
+        user?.lastName ||
+        user?.name.split(" ").slice(1).join(" ") ||
+        "",
+    }));
+  }
 
   const pollOrderStatus = useCallback(async (id: string) => {
     const runId = pollingRunRef.current + 1;
@@ -491,6 +563,18 @@ export default function CheckoutPage() {
       const order = await createOrder({ quote: quoted, address });
       setOrderId(order.id);
 
+      if (selectedAddressId === "new" && saveNewAddress) {
+        try {
+          await createAddress(
+            checkoutToAddressInput(address, {
+              isDefault: savedAddresses.length === 0,
+            }),
+          );
+        } catch {
+          /* checkout should continue even if address save fails */
+        }
+      }
+
       setStage("preparing_payment");
       const idempotencyKey = generateIdempotencyKey();
       const preparedPayment = await prepareRazorpayPayment({
@@ -632,110 +716,203 @@ export default function CheckoutPage() {
                 <h2 className="mb-3 text-[25px] font-semibold text-[#1f1f1f]">
                   Delivery
                 </h2>
-                <select
-                  value={address.country}
-                  onChange={() => undefined}
-                  className="h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                >
-                  <option>India</option>
-                </select>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    required
-                    placeholder="First name"
-                    value={address.firstName}
-                    onChange={(event) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        firstName: event.target.value,
-                      }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Last name"
-                    value={address.lastName}
-                    onChange={(event) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        lastName: event.target.value,
-                      }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                </div>
+                {addressesLoading ? (
+                  <div className="mb-4 rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[14px] text-[#555]">
+                    Loading saved addresses...
+                  </div>
+                ) : savedAddresses.length > 0 ? (
+                  <div className="mb-4 space-y-2">
+                    {savedAddresses.map((saved) => {
+                      const selected = selectedAddressId === saved.id;
+                      return (
+                        <label
+                          key={saved.id}
+                          className={`flex cursor-pointer gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                            selected
+                              ? "border-[#9ea600] bg-[#f8f9f0]"
+                              : "border-[#dbdbdb] bg-white hover:border-[#c5c875]"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="checkout-address"
+                            checked={selected}
+                            onChange={() => selectSavedAddress(saved.id)}
+                            className="mt-1 size-4 shrink-0 accent-[#9ea600]"
+                          />
+                          <span className="min-w-0">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="text-[14px] font-semibold text-[#222]">
+                                {saved.label || saved.fullName}
+                              </span>
+                              {saved.isDefault ? (
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                                  Default
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="mt-1 block text-[13px] leading-relaxed text-[#666]">
+                              {formatAddressLines(saved)}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={useNewAddress}
+                      className={`w-full rounded-xl border px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                        selectedAddressId === "new"
+                          ? "border-[#9ea600] bg-[#f8f9f0] text-[#4c5200]"
+                          : "border-[#dbdbdb] bg-white text-[#444] hover:border-[#c5c875]"
+                      }`}
+                    >
+                      Use a different address
+                    </button>
+                  </div>
+                ) : null}
 
-                <input
-                  type="text"
-                  required
-                  maxLength={200}
-                  placeholder="Address"
-                  value={address.addressLine1}
-                  onChange={(event) =>
-                    setAddress((prev) => ({
-                      ...prev,
-                      addressLine1: event.target.value,
-                    }))
-                  }
-                  className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                />
-                <input
-                  type="text"
-                  maxLength={200}
-                  placeholder="Apartment, suite, etc. (optional)"
-                  value={address.addressLine2}
-                  onChange={(event) =>
-                    setAddress((prev) => ({
-                      ...prev,
-                      addressLine2: event.target.value,
-                    }))
-                  }
-                  className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                />
+                {selectedAddressId !== "new" && savedAddresses.length > 0 ? (
+                  <div className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] px-4 py-4">
+                    <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#777]">
+                      Delivering to
+                    </p>
+                    <p className="mt-2 text-[15px] font-medium text-[#222]">
+                      {address.firstName} {address.lastName}
+                    </p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-[#555]">
+                      {[
+                        address.addressLine1,
+                        address.addressLine2,
+                        [address.city, address.state].filter(Boolean).join(", "),
+                        address.postalCode,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                    <p className="mt-1 text-[14px] text-[#666]">{address.phone}</p>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={address.country}
+                      onChange={() => undefined}
+                      className="h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                    >
+                      <option>India</option>
+                    </select>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
-                  <input
-                    type="text"
-                    required
-                    maxLength={80}
-                    placeholder="City"
-                    value={address.city}
-                    onChange={(event) =>
-                      setAddress((prev) => ({ ...prev, city: event.target.value }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                  <input
-                    type="text"
-                    required
-                    maxLength={80}
-                    placeholder="State"
-                    value={address.state}
-                    onChange={(event) =>
-                      setAddress((prev) => ({ ...prev, state: event.target.value }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                  <input
-                    type="text"
-                    required
-                    minLength={3}
-                    maxLength={20}
-                    placeholder="PIN code"
-                    value={address.postalCode}
-                    onChange={(event) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        postalCode: event.target.value,
-                      }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                </div>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="First name"
+                        value={address.firstName}
+                        onChange={(event) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            firstName: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        placeholder="Last name"
+                        value={address.lastName}
+                        onChange={(event) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            lastName: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                    </div>
+
+                    <input
+                      type="text"
+                      required
+                      maxLength={200}
+                      placeholder="Address"
+                      value={address.addressLine1}
+                      onChange={(event) =>
+                        setAddress((prev) => ({
+                          ...prev,
+                          addressLine1: event.target.value,
+                        }))
+                      }
+                      className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                    />
+                    <input
+                      type="text"
+                      maxLength={200}
+                      placeholder="Apartment, suite, etc. (optional)"
+                      value={address.addressLine2}
+                      onChange={(event) =>
+                        setAddress((prev) => ({
+                          ...prev,
+                          addressLine2: event.target.value,
+                        }))
+                      }
+                      className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                    />
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
+                      <input
+                        type="text"
+                        required
+                        maxLength={80}
+                        placeholder="City"
+                        value={address.city}
+                        onChange={(event) =>
+                          setAddress((prev) => ({ ...prev, city: event.target.value }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        maxLength={80}
+                        placeholder="State"
+                        value={address.state}
+                        onChange={(event) =>
+                          setAddress((prev) => ({ ...prev, state: event.target.value }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        minLength={3}
+                        maxLength={20}
+                        placeholder="PIN code"
+                        value={address.postalCode}
+                        onChange={(event) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            postalCode: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                    </div>
+
+                    <label className="mt-4 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={saveNewAddress}
+                        onChange={(event) => setSaveNewAddress(event.target.checked)}
+                        className="size-4 rounded border-[#dbdbdb] accent-[#9ea600]"
+                      />
+                      <span className="text-[14px] text-[#444]">
+                        Save this address for future orders
+                      </span>
+                    </label>
+                  </>
+                )}
               </section>
 
               {quote && !quote.valid ? (

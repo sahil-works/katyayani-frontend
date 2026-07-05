@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "../../../providers/AuthProvider";
+import { SavedAddressesSection } from "../../../components/account/SavedAddressesSection";
 import { getApiErrorMessage } from "../../../lib/api/errors";
 import {
   isValidEmail,
   normalizeIndianMobile,
   OTP_LENGTH,
 } from "../../../lib/auth/validation";
+import { useAuth } from "../../../providers/AuthProvider";
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
@@ -461,14 +462,7 @@ export default function AccountProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-[#dadcc8] bg-[#fbfcf8] p-6">
-        <h2 className="text-[18px] font-semibold text-[#1f1f1f]">
-          Saved addresses
-        </h2>
-        <p className="mt-1 text-[14px] text-[#777]">
-          Save delivery addresses for faster checkout. Coming soon.
-        </p>
-      </div>
+      <SavedAddressesSection />
     </section>
   );
 }
