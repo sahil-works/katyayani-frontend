@@ -243,7 +243,7 @@ function normalizeQuote(payload: QuoteApiResponse): QuoteViewModel {
     tax,
     total,
     formattedSubtotal: formatCurrency(subtotal),
-    formattedShipping: formatCurrency(shipping),
+    formattedShipping: shipping <= 0 ? "Free" : formatCurrency(shipping),
     formattedTax: formatCurrency(tax),
     formattedTotal: formatCurrency(total),
     expiresAt: payload.expiresAt ?? undefined,
