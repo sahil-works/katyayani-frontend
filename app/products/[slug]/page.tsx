@@ -4,7 +4,6 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import Footer from "../../../components/Footer";
 import ProductDetailInteractive from "../../../components/ProductDetailInteractive";
-import ProductInfoAccordion from "../../../components/product-detail/ProductInfoAccordion";
 import ProductDetailPostPurchaseSection from "../../../components/ProductDetailPostPurchaseSection";
 import RelatedProductsSection from "../../../components/product-detail/RelatedProductsSection";
 import { getProductBySlug } from "../../../lib/api";
@@ -104,10 +103,6 @@ export default async function ProductDetailPage({ params }: Props) {
         </nav>
 
         <ProductDetailInteractive product={product} />
-
-        <div className="mt-10 lg:mt-14">
-          <ProductInfoAccordion description={product.description} />
-        </div>
       </div>
 
       <ProductDetailPostPurchaseSection />

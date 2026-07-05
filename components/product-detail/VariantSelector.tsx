@@ -23,62 +23,44 @@ export default function VariantSelector({
 }: VariantSelectorProps) {
   if (variants.length === 0) {
     return (
-      <div className="rounded-full border border-[#e4ded2] bg-[#fbfaf6] px-5 py-3 text-[14px] text-[#6a6256]">
-        This product has no selectable variants.
+      <p className="text-[14px] text-[#666]">This product has no selectable variants.</p>
+    );
+  }
+
+  if (variants.length === 1) {
+    const variant = variants[0];
+    const optionLabel = getOptionLabel(variant.options);
+    const label = [optionLabel, variant.inStock ? null : "Sold out"]
+      .filter(Boolean)
+      .join(" - ");
+
+    return (
+      <div className="rounded-full border border-[#d9d9d9] bg-white px-5 py-3.5 text-[14px] text-[#333]">
+        {label}
       </div>
     );
   }
 
   return (
-    <fieldset>
-      <legend className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#8a857b]">
-        Select variant
-      </legend>
-      <div className="mt-4 flex flex-wrap gap-2.5">
+    <label className="block">
+      <span className="sr-only">Select variant</span>
+      <select
+        value={selectedVariant?.id ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-12 w-full rounded-full border border-[#d9d9d9] bg-white px-5 text-[14px] text-[#333] outline-none transition-colors focus:border-[#111]"
+      >
         {variants.map((variant) => {
-          const checked = variant.id === selectedVariant?.id;
           const optionLabel = getOptionLabel(variant.options);
+          const suffix = variant.inStock ? "" : " - Sold out";
 
           return (
-            <label
-              key={variant.id}
-              className={`group relative cursor-pointer rounded-full border px-4 py-3 transition-all duration-200 ${
-                checked
-                  ? "border-[#1f1a14] bg-[#1f1a14] text-white"
-                  : "border-[#ded7ca] bg-white text-[#241f18] hover:border-[#9ea600] hover:bg-[#fbfaf6]"
-              } ${variant.inStock ? "" : "opacity-55"}`}
-            >
-              <input
-                type="radio"
-                name="product-variant"
-                value={variant.id}
-                checked={checked}
-                onChange={() => onChange(variant.id)}
-                className="sr-only"
-              />
-              <span className="block text-[13px] font-semibold uppercase tracking-[0.08em]">
-                {variant.title}
-              </span>
-              <span
-                className={`mt-0.5 block text-[12px] ${
-                  checked ? "text-white/75" : "text-[#7b7469]"
-                }`}
-              >
-                {optionLabel}
-              </span>
-              {!variant.inStock ? (
-                <span
-                  className={`mt-1 block text-[11px] font-medium ${
-                    checked ? "text-white/70" : "text-[#9a3f3f]"
-                  }`}
-                >
-                  {variant.stockLabel}
-                </span>
-              ) : null}
-            </label>
+            <option key={variant.id} value={variant.id}>
+              {optionLabel}
+              {suffix}
+            </option>
           );
         })}
-      </div>
-    </fieldset>
+      </select>
+    </label>
   );
 }

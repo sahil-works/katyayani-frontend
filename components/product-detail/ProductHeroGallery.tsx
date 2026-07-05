@@ -35,7 +35,11 @@ export default function ProductHeroGallery({
 
   return (
     <section
-      className="grid gap-4 lg:grid-cols-[88px_minmax(0,1fr)] lg:gap-5"
+      className={
+        hasMultipleImages
+          ? "grid gap-4 lg:grid-cols-[88px_minmax(0,1fr)] lg:gap-5"
+          : "grid gap-4"
+      }
       aria-label={`${productName} image gallery`}
     >
       {hasMultipleImages ? (
@@ -64,17 +68,26 @@ export default function ProductHeroGallery({
         </div>
       ) : null}
 
-      <div className="order-1 lg:order-2">
-        <div className="relative min-h-[500px] overflow-hidden rounded-[32px] bg-[#f5efe5] sm:min-h-[660px] lg:min-h-[760px]">
+      <div className={hasMultipleImages ? "order-1 lg:order-2" : ""}>
+        <div
+          className={`relative overflow-hidden rounded-[4px] bg-[#f8f8f8] ${
+            hasMultipleImages
+              ? "min-h-[500px] sm:min-h-[660px] lg:min-h-[760px]"
+              : "aspect-[3/4] min-h-[420px] sm:aspect-[4/5] sm:min-h-[520px] lg:min-h-[680px]"
+          }`}
+        >
           <StorefrontImage
             image={activeImage}
             fallbackAlt={productName}
             fill
             priority
-            className="object-cover object-center transition-transform duration-500"
+            className={
+              hasMultipleImages
+                ? "object-cover object-center transition-transform duration-500"
+                : "object-contain object-center transition-transform duration-500"
+            }
             sizes="(min-width: 1024px) 58vw, 100vw"
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/20 to-transparent" />
 
           {hasMultipleImages ? (
             <div className="absolute bottom-5 right-5 flex items-center gap-2">
