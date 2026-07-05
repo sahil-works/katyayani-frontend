@@ -2,6 +2,7 @@ export * from "./contact";
 export * from "./addresses";
 export * from "./auth";
 export * from "./cart";
+export * from "./catalogs";
 export * from "./categories";
 export * from "./checkout";
 export * from "./client";

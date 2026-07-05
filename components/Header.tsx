@@ -8,6 +8,7 @@ import { useCartSidebar } from "./CartSidebar";
 import { useLoginModal } from "./LoginModal";
 import { useSearchSidebar } from "./SearchSidebar";
 import { useAuth } from "../providers/AuthProvider";
+import { CatalogMenuLinks } from "./catalog/CatalogNavLinks";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -20,13 +21,6 @@ const navItems = [
   { label: "New Arrivals", href: "/new-arrivals" },
   { label: "All collections", href: "/collections" },
   { label: "Contact us", href: "/contact-us" },
-];
-
-const catalogItems = [
-  { label: "Silk suit", href: "/catalog/silk-suit" },
-  { label: "Muslin suit", href: "/catalog/muslin-suit" },
-  { label: "Pakistani suit", href: "/catalog/pakistani-suit" },
-  { label: "Cotton Suit", href: "/catalog/cotton-suit" },
 ];
 
 function SearchIcon() {
@@ -139,21 +133,7 @@ export default function Header() {
                   <ChevronDownIcon />
                 </button>
                 <div className="invisible absolute left-1/2 top-full z-20 mt-4 w-60 -translate-x-1/2 rounded-xl border border-[#e9e9e9] bg-white p-2 opacity-0 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  {catalogItems.map((catalogItem) => (
-                    <Link
-                      key={catalogItem.label}
-                      href={catalogItem.href}
-                      className="group/link flex items-center gap-3 rounded-lg px-3 py-2.5 text-[16px] text-[#343434] transition-colors hover:bg-[#f7f8ec] hover:text-[#9ea600]"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="h-2 w-2 rounded-full bg-[#9ea600]"
-                      />
-                      <span className="relative after:absolute after:-bottom-0.5 after:left-0 after:h-[1px] after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 group-hover/link:after:scale-x-100">
-                        {catalogItem.label}
-                      </span>
-                    </Link>
-                  ))}
+                  <CatalogMenuLinks />
                 </div>
               </div>
             ) : (

@@ -18,4 +18,11 @@ export const storefrontQueryKeys = {
     detail: (slug: string) =>
       [...storefrontQueryKeys.categories.details(), slug] as const,
   },
+  catalogs: {
+    all: ["storefront", "catalogs"] as const,
+    nav: () => [...storefrontQueryKeys.catalogs.all, "nav"] as const,
+    details: () => [...storefrontQueryKeys.catalogs.all, "detail"] as const,
+    detail: (slug: string, page = 1) =>
+      [...storefrontQueryKeys.catalogs.details(), slug, page] as const,
+  },
 };
