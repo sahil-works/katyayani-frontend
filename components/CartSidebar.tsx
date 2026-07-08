@@ -173,6 +173,8 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
   const [hasHydratedGuestCart, setHasHydratedGuestCart] = useState(false);
   const hasReplayedRef = useRef(false);
   const mutationInFlightRef = useRef(false);
+  const guestLinesRef = useRef(guestLines);
+  guestLinesRef.current = guestLines;
 
   const mode: CartMode = isAuthenticated ? "authenticated" : "guest";
   const guestCart = useMemo(() => normalizeGuestCart(guestLines), [guestLines]);
@@ -228,36 +230,47 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
     [logout, refresh],
   );
 
+  const withAuthRetryRef = useRef(withAuthRetry);
+  withAuthRetryRef.current = withAuthRetry;
+  const mutationQueueRef = useRef(Promise.resolve());
+
   const runCartMutation = useCallback(
     async (operation: () => Promise<CartViewModel>) => {
-      if (mutationInFlightRef.current) return null;
+      let result: CartViewModel | null = null;
 
-      mutationInFlightRef.current = true;
-      setIsLoading(true);
-      setError("");
+      mutationQueueRef.current = mutationQueueRef.current.then(async () => {
+        mutationInFlightRef.current = true;
+        setIsLoading(true);
+        setError("");
 
-      try {
-        const cart = await withAuthRetry(operation);
-        setBackendCart(cart);
-        return cart;
-      } catch (cartError) {
-        setError(getApiErrorMessage(cartError));
-        return null;
-      } finally {
-        mutationInFlightRef.current = false;
-        setIsLoading(false);
-      }
+        try {
+          const cart = await withAuthRetry(operation);
+          setBackendCart(cart);
+          result = cart;
+        } catch (cartError) {
+          setError(getApiErrorMessage(cartError));
+          result = null;
+        } finally {
+          mutationInFlightRef.current = false;
+          setIsLoading(false);
+        }
+      });
+
+      await mutationQueueRef.current;
+      return result;
     },
     [withAuthRetry],
   );
 
   const refreshCart = useCallback(async () => {
-    if (!isAuthenticated) return null;
+    if (!isAuthenticated || mutationInFlightRef.current) return null;
 
     setError("");
     try {
       const cart = await withAuthRetry(getMyCart);
-      setBackendCart(cart);
+      if (!mutationInFlightRef.current) {
+        setBackendCart(cart);
+      }
       return cart;
     } catch (cartError) {
       setError(getApiErrorMessage(cartError));
@@ -267,13 +280,11 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status !== "authenticated" || !hasHydratedGuestCart) return;
-    if (hasReplayedRef.current) {
-      void refreshCart();
-      return;
-    }
+    if (hasReplayedRef.current) return;
 
     hasReplayedRef.current = true;
     let cancelled = false;
+    const linesToReplay = [...guestLinesRef.current];
 
     async function replayGuestCart() {
       setIsLoading(true);
@@ -282,9 +293,9 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
       const failedLines: CartLineViewModel[] = [];
 
       try {
-        let currentCart = await withAuthRetry(getMyCart);
+        let currentCart = await withAuthRetryRef.current(getMyCart);
 
-        for (const line of guestLines) {
+        for (const line of linesToReplay) {
           try {
             const existing = currentCart.lines.find(
               (item) =>
@@ -297,7 +308,7 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
             );
             if (quantity < 1) throw new Error("This item is unavailable.");
 
-            currentCart = await withAuthRetry(() =>
+            currentCart = await withAuthRetryRef.current(() =>
               addCartItem({
                 productId: line.productId,
                 variantId: line.variantId,
@@ -341,7 +352,7 @@ export function CartSidebarProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [guestLines, hasHydratedGuestCart, refreshCart, status, withAuthRetry]);
+  }, [status, hasHydratedGuestCart]);
 
   useEffect(() => {
     if (status === "guest") {
