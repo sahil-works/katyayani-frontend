@@ -9,6 +9,8 @@ type CartItemApiResponse = {
   quantity: number;
   productTitle?: string | null;
   productSlug?: string | null;
+  productImage?: string | null;
+  category?: { title?: string | null; name?: string | null; slug?: string | null } | null;
   variantTitle?: string | null;
   variantSku?: string | null;
   size?: string | number | null;
@@ -77,7 +79,10 @@ function normalizeApiImage(
 
 function pickImage(item: CartItemApiResponse, title: string) {
   const variantImage = item.variant?.image ?? item.variant?.images?.[0];
-  const productImage = item.product?.image ?? item.product?.images?.[0];
+  const productImage =
+    item.product?.image ??
+    item.product?.images?.[0] ??
+    item.productImage;
   return normalizeApiImage(variantImage ?? productImage, title);
 }
 
@@ -146,7 +151,11 @@ function normalizeCartLine(
     productTitle: title,
     slug: item.product?.slug ?? item.productSlug ?? "",
     category:
-      item.product?.category?.title ?? item.product?.category?.name ?? undefined,
+      item.product?.category?.title ??
+      item.product?.category?.name ??
+      item.category?.title ??
+      item.category?.name ??
+      undefined,
     variantTitle: getVariantTitle(item),
     image: pickImage(item, title),
     quantity,
