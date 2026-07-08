@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./client";
 import { formatCurrency, getStockLabel, resolveImageFallback } from "../storefront/commerce";
+import { humanizeCartInvalidReason } from "../storefront/unavailableItem";
 import type { ProductImageApiResponse } from "../storefront/types/api";
 import type { AddCartLineInput, CartLineViewModel, CartViewModel } from "../cart/types";
 
@@ -168,7 +169,10 @@ function normalizeCartLine(
     available,
     stockLabel: getStockLabel(inStock, availableQuantity),
     invalidReason:
-      invalidReason ?? item.invalidReason ?? item.reason ?? item.message ?? undefined,
+      invalidReason ??
+      humanizeCartInvalidReason(
+        item.invalidReason ?? item.reason ?? item.message,
+      ),
   };
 }
 
@@ -179,10 +183,12 @@ export function normalizeCart(payload: CartApiResponse): CartViewModel {
   const invalidLines = invalidItems.map((item) =>
     normalizeCartLine(
       item,
-      item.invalidReason ??
-        item.reason ??
-        item.message ??
-        "This item needs attention.",
+      humanizeCartInvalidReason(
+        item.invalidReason ??
+          item.reason ??
+          item.message ??
+          "This item needs attention.",
+      ) ?? "This item needs attention.",
     ),
   );
   const subtotal =

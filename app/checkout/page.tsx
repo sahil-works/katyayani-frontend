@@ -369,6 +369,7 @@ export default function CheckoutPage() {
           const quoted = await quoteOrder({
             lines: cartLinesToCheckoutPayload(lines),
             address,
+            cartLines: lines,
           });
           if (!cancelled) setQuote(quoted);
         } catch {
@@ -608,6 +609,7 @@ export default function CheckoutPage() {
       const quoted = await quoteOrder({
         lines: cartLinesToCheckoutPayload(latestCart.lines),
         address,
+        cartLines: latestCart.lines,
       });
       setQuote(quoted);
 
