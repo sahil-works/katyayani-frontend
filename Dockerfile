@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM node:22-alpine AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -19,7 +21,11 @@ ENV NEXT_PUBLIC_RAZORPAY_KEY_ID=$NEXT_PUBLIC_RAZORPAY_KEY_ID
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN npm run build \
+  && mkdir -p /app/runner/.next/static \
+  && cp -r /app/public /app/runner/public \
+  && cp -r /app/.next/standalone/. /app/runner/ \
+  && cp -r /app/.next/static/. /app/runner/.next/static/
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -32,9 +38,7 @@ ENV HOSTNAME=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/runner ./
 
 USER nextjs
 

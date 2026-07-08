@@ -20,6 +20,10 @@ RAZORPAY_KEY=$(aws ssm get-parameter \
   --query Parameter.Value \
   --output text)
 
+docker builder prune -f >/dev/null 2>&1 || true
+
+export DOCKER_BUILDKIT=1
+
 docker build \
   --build-arg NEXT_PUBLIC_APP_URL="$APP_URL" \
   --build-arg NEXT_PUBLIC_API_BASE_URL="$API_URL" \
