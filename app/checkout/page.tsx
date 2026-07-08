@@ -26,6 +26,7 @@ import {
 } from "../../lib/api/addresses";
 import { addressToCheckout, checkoutToAddressInput } from "../../lib/addresses/mappers";
 import { getApiErrorMessage, normalizeApiError } from "../../lib/api/errors";
+import { formatCurrency } from "../../lib/storefront/commerce";
 import { useAuth } from "../../providers/AuthProvider";
 
 const dancingScript = Dancing_Script({
@@ -135,6 +136,22 @@ function stageFromStatus(status: OrderStatusViewModel["status"]): CheckoutStage 
   return "failed";
 }
 
+function isCheckoutAddressReady(address: CheckoutAddress) {
+  const fullName = [address.firstName, address.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return (
+    fullName.length >= 1 &&
+    address.phone.trim().length >= 8 &&
+    address.addressLine1.trim().length >= 1 &&
+    address.city.trim().length >= 1 &&
+    address.state.trim().length >= 1 &&
+    address.postalCode.trim().length >= 3
+  );
+}
+
 function CheckoutHeader() {
   const { itemCount, openCart } = useCartSidebar();
 
@@ -231,6 +248,7 @@ export default function CheckoutPage() {
     lines,
     invalidLines,
     itemCount,
+    formattedSubtotal,
     isLoading: cartIsLoading,
     clearCart,
     refreshCart,
@@ -251,6 +269,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
   const [saveNewAddress, setSaveNewAddress] = useState(true);
   const [quote, setQuote] = useState<QuoteViewModel | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [stage, setStage] = useState<CheckoutStage>("idle");
   const [error, setError] = useState("");
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -326,6 +345,45 @@ export default function CheckoutPage() {
       cancelled = true;
     };
   }, [isAuthenticated, user?.email]);
+
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      lines.length === 0 ||
+      invalidLines.length > 0 ||
+      !isCheckoutAddressReady(address)
+    ) {
+      setQuote(null);
+      return;
+    }
+
+    if (["quoting", "creating_order", "preparing_payment", "payment_open", "polling"].includes(stage)) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setQuoteLoading(true);
+        try {
+          const quoted = await quoteOrder({
+            lines: cartLinesToCheckoutPayload(lines),
+            address,
+          });
+          if (!cancelled) setQuote(quoted);
+        } catch {
+          if (!cancelled) setQuote(null);
+        } finally {
+          if (!cancelled) setQuoteLoading(false);
+        }
+      })();
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [address, invalidLines.length, isAuthenticated, lines, stage]);
 
   function selectSavedAddress(id: string) {
     const saved = savedAddresses.find((item) => item.id === id);
@@ -636,6 +694,10 @@ export default function CheckoutPage() {
   const hasUnavailableCartLines = lines.some(
     (line) => !line.inStock || !line.available,
   );
+  const summarySubtotal = quote?.formattedSubtotal ?? formattedSubtotal;
+  const summaryShipping = quote?.formattedShipping ?? "Free";
+  const summaryTax = quote?.formattedTax ?? formatCurrency(0);
+  const summaryTotal = quote?.formattedTotal ?? formattedSubtotal;
 
   return (
     <main className="min-h-screen bg-[#f8f8f8]">
@@ -1002,24 +1064,28 @@ export default function CheckoutPage() {
 
               <div className="mt-7 space-y-2 border-t border-[#dddddd] pt-4">
                 <div className="flex items-center justify-between text-[14px] text-[#444]">
-                  <span>Cart subtotal ({itemCount} items)</span>
-                  <span>Not final</span>
-                </div>
-                <div className="flex items-center justify-between text-[14px] text-[#444]">
-                  <span>Quote subtotal</span>
-                  <span>{quote?.formattedSubtotal ?? "Pending"}</span>
+                  <span>Subtotal ({itemCount} items)</span>
+                  <span>{summarySubtotal}</span>
                 </div>
                 <div className="flex items-center justify-between text-[14px] text-[#444]">
                   <span>Shipping</span>
-                  <span>{quote?.formattedShipping ?? "Pending"}</span>
+                  <span>{summaryShipping}</span>
                 </div>
                 <div className="flex items-center justify-between text-[14px] text-[#444]">
                   <span>Tax</span>
-                  <span>{quote?.formattedTax ?? "Pending"}</span>
+                  <span>{summaryTax}</span>
                 </div>
+                {quoteLoading && !quote ? (
+                  <p className="text-[12px] text-[#888]">Updating totals...</p>
+                ) : null}
+                {!quote && !isCheckoutAddressReady(address) ? (
+                  <p className="text-[12px] text-[#888]">
+                    Enter your delivery address to confirm final totals.
+                  </p>
+                ) : null}
                 <div className="flex items-center justify-between border-t border-[#dddddd] pt-3 text-[24px] font-semibold text-[#202020]">
                   <span>Total</span>
-                  <span>{quote?.formattedTotal ?? "Quote required"}</span>
+                  <span>{summaryTotal}</span>
                 </div>
               </div>
             </>
