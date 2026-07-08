@@ -20,12 +20,14 @@ RAZORPAY_KEY=$(aws ssm get-parameter \
   --query Parameter.Value \
   --output text)
 
-# Clear stale builder cache that can cause "parent snapshot does not exist" on legacy Docker.
-docker builder prune -f >/dev/null 2>&1 || true
+# Clear stale Docker layers that can cause "parent snapshot does not exist" on EC2.
+docker image prune -f >/dev/null 2>&1 || true
 
-export DOCKER_BUILDKIT=1
+# EC2 host uses legacy Docker without buildx; do not enable BuildKit here.
+export DOCKER_BUILDKIT=0
 
 docker build \
+  --no-cache \
   --build-arg NEXT_PUBLIC_APP_URL="$APP_URL" \
   --build-arg NEXT_PUBLIC_API_BASE_URL="$API_URL" \
   --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$RAZORPAY_KEY" \
