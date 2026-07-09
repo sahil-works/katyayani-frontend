@@ -81,11 +81,7 @@ export default function ProductHeroGallery({
             fallbackAlt={productName}
             fill
             priority
-            className={
-              hasMultipleImages
-                ? "object-cover object-center transition-transform duration-500"
-                : "object-contain object-center transition-transform duration-500"
-            }
+            className="object-contain object-center transition-transform duration-500"
             sizes="(min-width: 1024px) 58vw, 100vw"
           />
 

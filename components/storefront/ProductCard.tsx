@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProductCardViewModel } from "../../lib/storefront/types/viewModels";
+import { ProductPriceDisplay } from "./ProductPriceDisplay";
 import { StorefrontImage } from "./StorefrontImage";
 
 type ProductCardProps = {
@@ -7,26 +8,6 @@ type ProductCardProps = {
   viewMode?: "grid" | "list";
   imagePriority?: boolean;
 };
-
-function ProductPrice({ product }: { product: ProductCardViewModel }) {
-  const priceLabel =
-    product.price.minEffectivePrice !== product.price.maxEffectivePrice
-      ? product.price.formattedPriceRange
-      : product.price.formattedEffectivePrice;
-
-  return (
-    <div className="mt-2 flex flex-wrap items-center justify-center gap-2 leading-none data-[align=start]:justify-start">
-      <span className="text-[20px] font-medium text-[#9ea600]">
-        {priceLabel}
-      </span>
-      {product.price.hasSale ? (
-        <span className="text-[16px] text-[#7a7a7a] line-through">
-          {product.price.formattedPrice}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 export function ProductCard({
   product,
@@ -106,8 +87,11 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className={isList ? "sm:text-left" : ""}>
-        <ProductPrice product={product} />
+      <div className={`mt-2 ${isList ? "sm:text-left" : ""}`}>
+        <ProductPriceDisplay
+          price={product.price}
+          align={isList ? "start" : "center"}
+        />
       </div>
     </article>
   );

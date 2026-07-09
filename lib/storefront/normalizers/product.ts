@@ -27,6 +27,50 @@ function numberOrUndefined(value: number | string | null | undefined) {
   return Number.isFinite(numeric) ? numeric : undefined;
 }
 
+function resolveEffectivePrice(
+  basePrice: number,
+  salePrice?: number,
+  effectivePrice?: number,
+  minEffectivePrice?: number,
+): number {
+  const resolvedEffectivePrice = numberOrUndefined(effectivePrice);
+  if (resolvedEffectivePrice !== undefined) {
+    return resolvedEffectivePrice;
+  }
+
+  const resolvedMinEffectivePrice = numberOrUndefined(minEffectivePrice);
+  if (resolvedMinEffectivePrice !== undefined) {
+    return resolvedMinEffectivePrice;
+  }
+
+  if (
+    salePrice !== undefined &&
+    salePrice > 0 &&
+    salePrice < basePrice
+  ) {
+    return salePrice;
+  }
+
+  return basePrice;
+}
+
+function resolveHasSale(
+  basePrice: number,
+  salePrice?: number,
+  effectivePrice?: number,
+  hasSale?: boolean | null,
+): boolean {
+  if (hasSale != null) {
+    return Boolean(hasSale);
+  }
+
+  if (salePrice !== undefined && salePrice > 0 && salePrice < basePrice) {
+    return true;
+  }
+
+  return effectivePrice !== undefined && effectivePrice < basePrice;
+}
+
 function normalizePrice({
   price,
   salePrice,
@@ -44,19 +88,33 @@ function normalizePrice({
 }): ProductPriceViewModel {
   const basePrice = numberOrUndefined(price) ?? 0;
   const normalizedSalePrice = numberOrUndefined(salePrice);
-  const normalizedEffectivePrice =
-    numberOrUndefined(effectivePrice) ?? basePrice;
   const normalizedMinEffectivePrice =
-    numberOrUndefined(minEffectivePrice) ?? normalizedEffectivePrice;
+    numberOrUndefined(minEffectivePrice);
   const normalizedMaxEffectivePrice =
-    numberOrUndefined(maxEffectivePrice) ?? normalizedEffectivePrice;
+    numberOrUndefined(maxEffectivePrice);
+  const normalizedEffectivePrice = resolveEffectivePrice(
+    basePrice,
+    normalizedSalePrice,
+    numberOrUndefined(effectivePrice),
+    normalizedMinEffectivePrice,
+  );
+  const resolvedMinEffectivePrice =
+    normalizedMinEffectivePrice ?? normalizedEffectivePrice;
+  const resolvedMaxEffectivePrice =
+    normalizedMaxEffectivePrice ?? normalizedEffectivePrice;
+  const resolvedHasSale = resolveHasSale(
+    basePrice,
+    normalizedSalePrice,
+    normalizedEffectivePrice,
+    hasSale,
+  );
 
   return {
     price: basePrice,
     salePrice: normalizedSalePrice,
     effectivePrice: normalizedEffectivePrice,
-    minEffectivePrice: normalizedMinEffectivePrice,
-    maxEffectivePrice: normalizedMaxEffectivePrice,
+    minEffectivePrice: resolvedMinEffectivePrice,
+    maxEffectivePrice: resolvedMaxEffectivePrice,
     currency: "INR",
     formattedPrice: formatCurrency(basePrice),
     formattedSalePrice:
@@ -65,10 +123,10 @@ function normalizePrice({
         : undefined,
     formattedEffectivePrice: formatCurrency(normalizedEffectivePrice),
     formattedPriceRange: renderPriceRange([
-      normalizedMinEffectivePrice,
-      normalizedMaxEffectivePrice,
+      resolvedMinEffectivePrice,
+      resolvedMaxEffectivePrice,
     ]),
-    hasSale: Boolean(hasSale),
+    hasSale: resolvedHasSale,
   };
 }
 
@@ -222,6 +280,36 @@ function pickPrimaryVariant(variants: ProductVariantViewModel[]) {
   return variants.find((variant) => variant.inStock) ?? variants[0];
 }
 
+function deriveProductLevelPrice(
+  product: ProductApiResponse,
+  variants: ProductVariantViewModel[],
+  primaryVariant?: ProductVariantViewModel,
+) {
+  const variantPrices = variants.map((variant) => variant.price);
+  const variantEffectivePrices = variantPrices.map((price) => price.effectivePrice);
+
+  return normalizePrice({
+    price: product.price ?? primaryVariant?.price.price,
+    salePrice: product.salePrice ?? primaryVariant?.price.salePrice,
+    effectivePrice:
+      product.effectivePrice ??
+      product.minEffectivePrice ??
+      primaryVariant?.price.effectivePrice,
+    minEffectivePrice:
+      product.minEffectivePrice ??
+      (variantEffectivePrices.length > 0
+        ? Math.min(...variantEffectivePrices)
+        : undefined),
+    maxEffectivePrice:
+      product.maxEffectivePrice ??
+      (variantEffectivePrices.length > 0
+        ? Math.max(...variantEffectivePrices)
+        : undefined),
+    hasSale:
+      product.hasSale ?? variantPrices.some((price) => price.hasSale),
+  });
+}
+
 function resolveProductCategory(product: ProductApiResponse) {
   if (product.category) return normalizeCategory(product.category);
   return product.categories?.[0] ? normalizeCategory(product.categories[0]) : undefined;
@@ -232,15 +320,7 @@ export function normalizeProductCard(
 ): ProductCardViewModel {
   const variants = (product.variants ?? []).map(normalizeVariant);
   const primaryVariant = pickPrimaryVariant(variants);
-  const price =
-    normalizePrice({
-      price: product.price ?? primaryVariant?.price.price,
-      salePrice: product.salePrice ?? primaryVariant?.price.salePrice,
-      effectivePrice: product.effectivePrice,
-      minEffectivePrice: product.minEffectivePrice,
-      maxEffectivePrice: product.maxEffectivePrice,
-      hasSale: product.hasSale,
-    }) ?? primaryVariant?.price;
+  const price = deriveProductLevelPrice(product, variants, primaryVariant);
   const inStock = productIsInStock(product, variants);
   const [image] = normalizeImages(product);
 

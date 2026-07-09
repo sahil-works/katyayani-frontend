@@ -6,6 +6,7 @@ import type {
   ProductPriceViewModel,
   ProductVariantViewModel,
 } from "../../lib/storefront/types/viewModels";
+import { ProductPriceDisplay } from "../storefront/ProductPriceDisplay";
 import AddToCartPanel from "./AddToCartPanel";
 import ProductInfoAccordion from "./ProductInfoAccordion";
 import VariantSelector from "./VariantSelector";
@@ -25,19 +26,6 @@ type ProductSummaryPanelProps = {
   onVariantChange: (variantId: string) => void;
   onAddToCart: () => void;
 };
-
-function PriceBlock({ price }: { price: ProductPriceViewModel }) {
-  const priceLabel =
-    price.minEffectivePrice !== price.maxEffectivePrice
-      ? price.formattedPriceRange
-      : price.formattedEffectivePrice;
-
-  return (
-    <p className="text-[22px] font-normal tracking-tight text-[#111] sm:text-[24px]">
-      {priceLabel}
-    </p>
-  );
-}
 
 export default function ProductSummaryPanel({
   product,
@@ -77,7 +65,7 @@ export default function ProductSummaryPanel({
           </h1>
         </div>
 
-        <PriceBlock price={selectedPrice} />
+        <ProductPriceDisplay price={selectedPrice} size="detail" align="start" />
 
         <hr className="border-[#e8e8e8]" />
 
