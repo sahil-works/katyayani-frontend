@@ -1,43 +1,121 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
 
-APP_NAME=katyayani-storefront
-PORT=3200
-PARAM_PATH=/katyayani/staging/frontend
+readonly APP_NAME="katyayani-storefront"
+readonly IMAGE_TAG="${APP_NAME}:staging"
+readonly PORT=3200
+readonly PARAM_PATH="/katyayani/staging/frontend"
+readonly HEALTH_URL="http://127.0.0.1:${PORT}/api/health"
+readonly HEALTH_RETRIES=12
+readonly HEALTH_INTERVAL=5
 
-APP_URL=$(aws ssm get-parameter \
-  --name "$PARAM_PATH/NEXT_PUBLIC_APP_URL" \
-  --query Parameter.Value \
-  --output text)
+export BUILDKIT_PROGRESS=plain
 
-API_URL=$(aws ssm get-parameter \
-  --name "$PARAM_PATH/NEXT_PUBLIC_API_BASE_URL" \
-  --query Parameter.Value \
-  --output text)
+log() {
+  printf '[deploy-staging] %s\n' "$*"
+}
 
-RAZORPAY_KEY=$(aws ssm get-parameter \
-  --name "$PARAM_PATH/NEXT_PUBLIC_RAZORPAY_KEY_ID" \
-  --query Parameter.Value \
-  --output text)
+fail() {
+  printf '[deploy-staging] ERROR: %s\n' "$*" >&2
+  exit 1
+}
 
-# Clear stale Docker layers that can cause "parent snapshot does not exist" on EC2.
-docker image prune -f >/dev/null 2>&1 || true
+ssm_get() {
+  local parameter_name="$1"
+  aws ssm get-parameter \
+    --name "${parameter_name}" \
+    --query 'Parameter.Value' \
+    --output text
+}
 
-# EC2 host uses legacy Docker without buildx; do not enable BuildKit here.
-export DOCKER_BUILDKIT=0
+require_command() {
+  local command_name="$1"
+  command -v "${command_name}" >/dev/null 2>&1 || fail "${command_name} is required but not installed"
+}
 
+has_buildkit() {
+  docker buildx version >/dev/null 2>&1
+}
+
+prepare_docker() {
+  log "Checking disk space"
+  df -h / /var/lib/docker 2>/dev/null || df -h /
+
+  log "Removing local build artifacts from deploy context"
+  rm -rf node_modules .next .npm
+
+  log "Pruning stale Docker builder cache"
+  docker builder prune -af >/dev/null 2>&1 || true
+  docker image prune -f >/dev/null 2>&1 || true
+
+  if has_buildkit; then
+    export DOCKER_BUILDKIT=1
+    log "Using Docker BuildKit"
+  else
+    unset DOCKER_BUILDKIT
+    log "BuildKit unavailable; using legacy Docker builder"
+  fi
+}
+
+wait_for_health() {
+  local attempt=1
+  while (( attempt <= HEALTH_RETRIES )); do
+    if curl -sf "${HEALTH_URL}" >/dev/null 2>&1; then
+      log "Health check passed (${HEALTH_URL})"
+      return 0
+    fi
+
+    log "Health check attempt ${attempt}/${HEALTH_RETRIES} failed; retrying in ${HEALTH_INTERVAL}s..."
+    sleep "${HEALTH_INTERVAL}"
+    attempt=$((attempt + 1))
+  done
+
+  log "Container logs (last 50 lines):"
+  docker logs "${APP_NAME}" --tail 50 2>&1 || true
+  fail "Health check failed after ${HEALTH_RETRIES} attempts (${HEALTH_URL})"
+}
+
+cleanup_images() {
+  log "Pruning dangling Docker images"
+  docker image prune -f >/dev/null
+}
+
+require_command aws
+require_command docker
+require_command curl
+
+prepare_docker
+
+log "Loading SSM parameters from ${PARAM_PATH}"
+APP_URL="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_APP_URL")"
+API_URL="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL")"
+RAZORPAY_KEY="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID")"
+
+[[ -n "${APP_URL}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_APP_URL is empty"
+[[ -n "${API_URL}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL is empty"
+[[ -n "${RAZORPAY_KEY}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID is empty"
+
+log "Building image ${IMAGE_TAG}"
 docker build \
-  --no-cache \
-  --build-arg NEXT_PUBLIC_APP_URL="$APP_URL" \
-  --build-arg NEXT_PUBLIC_API_BASE_URL="$API_URL" \
-  --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="$RAZORPAY_KEY" \
-  -t ${APP_NAME}:staging .
+  --build-arg NEXT_PUBLIC_APP_URL="${APP_URL}" \
+  --build-arg NEXT_PUBLIC_API_BASE_URL="${API_URL}" \
+  --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${RAZORPAY_KEY}" \
+  -t "${IMAGE_TAG}" \
+  .
 
-docker stop $APP_NAME || true
-docker rm $APP_NAME || true
+log "Stopping existing container ${APP_NAME}"
+docker stop "${APP_NAME}" >/dev/null 2>&1 || true
+docker rm "${APP_NAME}" >/dev/null 2>&1 || true
 
+log "Starting container ${APP_NAME} on port ${PORT}"
 docker run -d \
-  --name $APP_NAME \
+  --name "${APP_NAME}" \
   --restart unless-stopped \
-  -p ${PORT}:3000 \
-  ${APP_NAME}:staging
+  -p "${PORT}:3000" \
+  "${IMAGE_TAG}" >/dev/null
+
+wait_for_health
+cleanup_images
+
+log "Staging deployment completed successfully"
