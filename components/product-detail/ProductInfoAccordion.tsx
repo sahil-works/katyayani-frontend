@@ -2,6 +2,7 @@ import { FileText, Leaf, Lock, Plus, Truck } from "lucide-react";
 
 type ProductInfoAccordionProps = {
   description: string;
+  variant?: "full" | "sidebar";
 };
 
 const accordionItems = [
@@ -11,9 +12,9 @@ const accordionItems = [
     body: null,
   },
   {
-    title: "Shipping",
+    title: "Free Shipping",
     icon: Truck,
-    body: "Shipping options and charges are calculated during checkout.",
+    body: "Enjoy free shipping on all orders. Delivery is completed within 5–7 working days from the date of dispatch.",
   },
   {
     title: "Care Guide",
@@ -29,34 +30,43 @@ const accordionItems = [
 
 export default function ProductInfoAccordion({
   description,
+  variant = "full",
 }: ProductInfoAccordionProps) {
+  const isSidebar = variant === "sidebar";
+
   return (
     <section
-      className="rounded-[28px] border border-[#e8e4dc] bg-[#fbfaf6] px-5 py-2 sm:px-7"
+      className={
+        isSidebar
+          ? "border-t border-[#e8e8e8]"
+          : "rounded-[28px] border border-[#e8e4dc] bg-[#fbfaf6] px-5 py-2 sm:px-7"
+      }
       aria-label="Product information"
     >
       {accordionItems.map(({ title, icon: Icon, body }, index) => (
         <details
           key={title}
-          className="group border-b border-[#e5dfd4] last:border-b-0"
-          open={index === 0}
+          className={`group border-b border-[#e8e8e8] last:border-b-0 ${
+            isSidebar ? "" : "border-[#e5dfd4]"
+          }`}
+          open={index === 0 && isSidebar}
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-[15px] font-medium uppercase tracking-[0.12em] text-[#1f1b16] [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-4 text-[14px] font-medium uppercase tracking-[0.08em] text-[#111] [&::-webkit-details-marker]:hidden sm:py-5">
             <span className="flex items-center gap-3">
               <Icon
-                className="h-4.5 w-4.5 shrink-0 text-[#9ea600]"
+                className={`h-4 w-4 shrink-0 ${isSidebar ? "text-[#666]" : "text-[#9ea600]"}`}
                 strokeWidth={1.45}
                 aria-hidden
               />
               {title}
             </span>
             <Plus
-              className="h-4.5 w-4.5 shrink-0 text-[#4b473f] transition-transform duration-200 group-open:rotate-45"
+              className="h-4 w-4 shrink-0 text-[#666] transition-transform duration-200 group-open:rotate-45"
               strokeWidth={1.6}
               aria-hidden
             />
           </summary>
-          <p className="max-w-3xl pb-5 text-[15px] leading-7 text-[#625d54]">
+          <p className="pb-4 text-[14px] leading-7 text-[#666] sm:pb-5">
             {title === "Description"
               ? description || "Product details will be updated soon."
               : body}

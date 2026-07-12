@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useCartSidebar } from "../../components/CartSidebar";
 import { useLoginModal } from "../../components/LoginModal";
@@ -17,7 +18,15 @@ import {
   type QuoteViewModel,
   type RazorpayPrepareViewModel,
 } from "../../lib/api/checkout";
+import {
+  createAddress,
+  formatAddressLines,
+  getAddresses,
+  type Address,
+} from "../../lib/api/addresses";
+import { addressToCheckout, checkoutToAddressInput } from "../../lib/addresses/mappers";
 import { getApiErrorMessage, normalizeApiError } from "../../lib/api/errors";
+import { formatCurrency } from "../../lib/storefront/commerce";
 import { useAuth } from "../../providers/AuthProvider";
 
 const dancingScript = Dancing_Script({
@@ -127,6 +136,22 @@ function stageFromStatus(status: OrderStatusViewModel["status"]): CheckoutStage 
   return "failed";
 }
 
+function isCheckoutAddressReady(address: CheckoutAddress) {
+  const fullName = [address.firstName, address.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return (
+    fullName.length >= 1 &&
+    address.phone.trim().length >= 8 &&
+    address.addressLine1.trim().length >= 1 &&
+    address.city.trim().length >= 1 &&
+    address.state.trim().length >= 1 &&
+    address.postalCode.trim().length >= 3
+  );
+}
+
 function CheckoutHeader() {
   const { itemCount, openCart } = useCartSidebar();
 
@@ -218,10 +243,12 @@ function CheckoutResult({
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const {
     lines,
     invalidLines,
     itemCount,
+    formattedSubtotal,
     isLoading: cartIsLoading,
     clearCart,
     refreshCart,
@@ -237,7 +264,12 @@ export default function CheckoutPage() {
     });
   }, [openLogin]);
   const [address, setAddress] = useState<CheckoutAddress>(INITIAL_ADDRESS);
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new");
+  const [saveNewAddress, setSaveNewAddress] = useState(true);
   const [quote, setQuote] = useState<QuoteViewModel | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [stage, setStage] = useState<CheckoutStage>("idle");
   const [error, setError] = useState("");
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -274,6 +306,107 @@ export default function CheckoutPage() {
         user.name.split(" ").slice(1).join(" "),
     }));
   }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedAddresses([]);
+      setSelectedAddressId("new");
+      return;
+    }
+
+    let cancelled = false;
+    setAddressesLoading(true);
+
+    void getAddresses()
+      .then((list) => {
+        if (cancelled) return;
+        setSavedAddresses(list);
+        const defaultAddress = list.find((item) => item.isDefault) ?? list[0];
+        if (defaultAddress) {
+          setSelectedAddressId(defaultAddress.id);
+          setAddress((prev) =>
+            addressToCheckout(defaultAddress, prev.email || user?.email || ""),
+          );
+        } else {
+          setSelectedAddressId("new");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSavedAddresses([]);
+          setSelectedAddressId("new");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAddressesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.email]);
+
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      lines.length === 0 ||
+      invalidLines.length > 0 ||
+      !isCheckoutAddressReady(address)
+    ) {
+      setQuote(null);
+      return;
+    }
+
+    if (["quoting", "creating_order", "preparing_payment", "payment_open", "polling"].includes(stage)) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setQuoteLoading(true);
+        try {
+          const quoted = await quoteOrder({
+            lines: cartLinesToCheckoutPayload(lines),
+            address,
+            cartLines: lines,
+          });
+          if (!cancelled) setQuote(quoted);
+        } catch {
+          if (!cancelled) setQuote(null);
+        } finally {
+          if (!cancelled) setQuoteLoading(false);
+        }
+      })();
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [address, invalidLines.length, isAuthenticated, lines, stage]);
+
+  function selectSavedAddress(id: string) {
+    const saved = savedAddresses.find((item) => item.id === id);
+    if (!saved) return;
+    setSelectedAddressId(id);
+    setAddress((prev) => addressToCheckout(saved, prev.email || user?.email || ""));
+  }
+
+  function useNewAddress() {
+    setSelectedAddressId("new");
+    setAddress((prev) => ({
+      ...INITIAL_ADDRESS,
+      email: prev.email || user?.email || "",
+      phone: prev.phone || user?.phone || "",
+      firstName: prev.firstName || user?.firstName || user?.name.split(" ")[0] || "",
+      lastName:
+        prev.lastName ||
+        user?.lastName ||
+        user?.name.split(" ").slice(1).join(" ") ||
+        "",
+    }));
+  }
 
   const pollOrderStatus = useCallback(async (id: string) => {
     const runId = pollingRunRef.current + 1;
@@ -333,6 +466,11 @@ export default function CheckoutPage() {
       if (isTerminalStatus(nextStatus.status)) {
         if (nextStatus.status === "PAID") {
           await clearCart();
+          if (!isActivePoll()) return nextStatus;
+          router.replace(
+            `/checkout/success?orderId=${encodeURIComponent(id)}`,
+          );
+          return nextStatus;
         }
         if (!isActivePoll()) return nextStatus;
         setStage(stageFromStatus(nextStatus.status));
@@ -354,7 +492,7 @@ export default function CheckoutPage() {
     setStatusResult(expired);
     setStage("expired");
     return expired;
-  }, [clearCart]);
+  }, [clearCart, router]);
 
   async function openRazorpay({
     preparedPayment,
@@ -471,6 +609,7 @@ export default function CheckoutPage() {
       const quoted = await quoteOrder({
         lines: cartLinesToCheckoutPayload(latestCart.lines),
         address,
+        cartLines: latestCart.lines,
       });
       setQuote(quoted);
 
@@ -483,6 +622,18 @@ export default function CheckoutPage() {
       setStage("creating_order");
       const order = await createOrder({ quote: quoted, address });
       setOrderId(order.id);
+
+      if (selectedAddressId === "new" && saveNewAddress) {
+        try {
+          await createAddress(
+            checkoutToAddressInput(address, {
+              isDefault: savedAddresses.length === 0,
+            }),
+          );
+        } catch {
+          /* checkout should continue even if address save fails */
+        }
+      }
 
       setStage("preparing_payment");
       const idempotencyKey = generateIdempotencyKey();
@@ -545,6 +696,10 @@ export default function CheckoutPage() {
   const hasUnavailableCartLines = lines.some(
     (line) => !line.inStock || !line.available,
   );
+  const summarySubtotal = quote?.formattedSubtotal ?? formattedSubtotal;
+  const summaryShipping = quote?.formattedShipping ?? "Free";
+  const summaryTax = quote?.formattedTax ?? formatCurrency(0);
+  const summaryTotal = quote?.formattedTotal ?? formattedSubtotal;
 
   return (
     <main className="min-h-screen bg-[#f8f8f8]">
@@ -625,110 +780,203 @@ export default function CheckoutPage() {
                 <h2 className="mb-3 text-[25px] font-semibold text-[#1f1f1f]">
                   Delivery
                 </h2>
-                <select
-                  value={address.country}
-                  onChange={() => undefined}
-                  className="h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                >
-                  <option>India</option>
-                </select>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    required
-                    placeholder="First name"
-                    value={address.firstName}
-                    onChange={(event) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        firstName: event.target.value,
-                      }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Last name"
-                    value={address.lastName}
-                    onChange={(event) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        lastName: event.target.value,
-                      }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                </div>
+                {addressesLoading ? (
+                  <div className="mb-4 rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[14px] text-[#555]">
+                    Loading saved addresses...
+                  </div>
+                ) : savedAddresses.length > 0 ? (
+                  <div className="mb-4 space-y-2">
+                    {savedAddresses.map((saved) => {
+                      const selected = selectedAddressId === saved.id;
+                      return (
+                        <label
+                          key={saved.id}
+                          className={`flex cursor-pointer gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                            selected
+                              ? "border-[#9ea600] bg-[#f8f9f0]"
+                              : "border-[#dbdbdb] bg-white hover:border-[#c5c875]"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="checkout-address"
+                            checked={selected}
+                            onChange={() => selectSavedAddress(saved.id)}
+                            className="mt-1 size-4 shrink-0 accent-[#9ea600]"
+                          />
+                          <span className="min-w-0">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="text-[14px] font-semibold text-[#222]">
+                                {saved.label || saved.fullName}
+                              </span>
+                              {saved.isDefault ? (
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                                  Default
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="mt-1 block text-[13px] leading-relaxed text-[#666]">
+                              {formatAddressLines(saved)}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={useNewAddress}
+                      className={`w-full rounded-xl border px-4 py-3 text-left text-[14px] font-medium transition-colors ${
+                        selectedAddressId === "new"
+                          ? "border-[#9ea600] bg-[#f8f9f0] text-[#4c5200]"
+                          : "border-[#dbdbdb] bg-white text-[#444] hover:border-[#c5c875]"
+                      }`}
+                    >
+                      Use a different address
+                    </button>
+                  </div>
+                ) : null}
 
-                <input
-                  type="text"
-                  required
-                  maxLength={200}
-                  placeholder="Address"
-                  value={address.addressLine1}
-                  onChange={(event) =>
-                    setAddress((prev) => ({
-                      ...prev,
-                      addressLine1: event.target.value,
-                    }))
-                  }
-                  className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                />
-                <input
-                  type="text"
-                  maxLength={200}
-                  placeholder="Apartment, suite, etc. (optional)"
-                  value={address.addressLine2}
-                  onChange={(event) =>
-                    setAddress((prev) => ({
-                      ...prev,
-                      addressLine2: event.target.value,
-                    }))
-                  }
-                  className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                />
+                {selectedAddressId !== "new" && savedAddresses.length > 0 ? (
+                  <div className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] px-4 py-4">
+                    <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#777]">
+                      Delivering to
+                    </p>
+                    <p className="mt-2 text-[15px] font-medium text-[#222]">
+                      {address.firstName} {address.lastName}
+                    </p>
+                    <p className="mt-1 text-[14px] leading-relaxed text-[#555]">
+                      {[
+                        address.addressLine1,
+                        address.addressLine2,
+                        [address.city, address.state].filter(Boolean).join(", "),
+                        address.postalCode,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                    <p className="mt-1 text-[14px] text-[#666]">{address.phone}</p>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={address.country}
+                      onChange={() => undefined}
+                      className="h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                    >
+                      <option>India</option>
+                    </select>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
-                  <input
-                    type="text"
-                    required
-                    maxLength={80}
-                    placeholder="City"
-                    value={address.city}
-                    onChange={(event) =>
-                      setAddress((prev) => ({ ...prev, city: event.target.value }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                  <input
-                    type="text"
-                    required
-                    maxLength={80}
-                    placeholder="State"
-                    value={address.state}
-                    onChange={(event) =>
-                      setAddress((prev) => ({ ...prev, state: event.target.value }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                  <input
-                    type="text"
-                    required
-                    minLength={3}
-                    maxLength={20}
-                    placeholder="PIN code"
-                    value={address.postalCode}
-                    onChange={(event) =>
-                      setAddress((prev) => ({
-                        ...prev,
-                        postalCode: event.target.value,
-                      }))
-                    }
-                    className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
-                  />
-                </div>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="First name"
+                        value={address.firstName}
+                        onChange={(event) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            firstName: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        placeholder="Last name"
+                        value={address.lastName}
+                        onChange={(event) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            lastName: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                    </div>
+
+                    <input
+                      type="text"
+                      required
+                      maxLength={200}
+                      placeholder="Address"
+                      value={address.addressLine1}
+                      onChange={(event) =>
+                        setAddress((prev) => ({
+                          ...prev,
+                          addressLine1: event.target.value,
+                        }))
+                      }
+                      className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                    />
+                    <input
+                      type="text"
+                      maxLength={200}
+                      placeholder="Apartment, suite, etc. (optional)"
+                      value={address.addressLine2}
+                      onChange={(event) =>
+                        setAddress((prev) => ({
+                          ...prev,
+                          addressLine2: event.target.value,
+                        }))
+                      }
+                      className="mt-3 h-12 w-full rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                    />
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
+                      <input
+                        type="text"
+                        required
+                        maxLength={80}
+                        placeholder="City"
+                        value={address.city}
+                        onChange={(event) =>
+                          setAddress((prev) => ({ ...prev, city: event.target.value }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        maxLength={80}
+                        placeholder="State"
+                        value={address.state}
+                        onChange={(event) =>
+                          setAddress((prev) => ({ ...prev, state: event.target.value }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                      <input
+                        type="text"
+                        required
+                        minLength={3}
+                        maxLength={20}
+                        placeholder="PIN code"
+                        value={address.postalCode}
+                        onChange={(event) =>
+                          setAddress((prev) => ({
+                            ...prev,
+                            postalCode: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-md border border-[#dbdbdb] px-3 text-[14px] outline-none"
+                      />
+                    </div>
+
+                    <label className="mt-4 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={saveNewAddress}
+                        onChange={(event) => setSaveNewAddress(event.target.checked)}
+                        className="size-4 rounded border-[#dbdbdb] accent-[#9ea600]"
+                      />
+                      <span className="text-[14px] text-[#444]">
+                        Save this address for future orders
+                      </span>
+                    </label>
+                  </>
+                )}
               </section>
 
               {quote && !quote.valid ? (
@@ -818,24 +1066,28 @@ export default function CheckoutPage() {
 
               <div className="mt-7 space-y-2 border-t border-[#dddddd] pt-4">
                 <div className="flex items-center justify-between text-[14px] text-[#444]">
-                  <span>Cart subtotal ({itemCount} items)</span>
-                  <span>Not final</span>
-                </div>
-                <div className="flex items-center justify-between text-[14px] text-[#444]">
-                  <span>Quote subtotal</span>
-                  <span>{quote?.formattedSubtotal ?? "Pending"}</span>
+                  <span>Subtotal ({itemCount} items)</span>
+                  <span>{summarySubtotal}</span>
                 </div>
                 <div className="flex items-center justify-between text-[14px] text-[#444]">
                   <span>Shipping</span>
-                  <span>{quote?.formattedShipping ?? "Pending"}</span>
+                  <span>{summaryShipping}</span>
                 </div>
                 <div className="flex items-center justify-between text-[14px] text-[#444]">
                   <span>Tax</span>
-                  <span>{quote?.formattedTax ?? "Pending"}</span>
+                  <span>{summaryTax}</span>
                 </div>
+                {quoteLoading && !quote ? (
+                  <p className="text-[12px] text-[#888]">Updating totals...</p>
+                ) : null}
+                {!quote && !isCheckoutAddressReady(address) ? (
+                  <p className="text-[12px] text-[#888]">
+                    Enter your delivery address to confirm final totals.
+                  </p>
+                ) : null}
                 <div className="flex items-center justify-between border-t border-[#dddddd] pt-3 text-[24px] font-semibold text-[#202020]">
                   <span>Total</span>
-                  <span>{quote?.formattedTotal ?? "Quote required"}</span>
+                  <span>{summaryTotal}</span>
                 </div>
               </div>
             </>

@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./client";
 import { formatCurrency, getStockLabel, resolveImageFallback } from "../storefront/commerce";
+import { humanizeCartInvalidReason } from "../storefront/unavailableItem";
 import type { ProductImageApiResponse } from "../storefront/types/api";
 import type { AddCartLineInput, CartLineViewModel, CartViewModel } from "../cart/types";
 
@@ -9,6 +10,8 @@ type CartItemApiResponse = {
   quantity: number;
   productTitle?: string | null;
   productSlug?: string | null;
+  productImage?: string | null;
+  category?: { title?: string | null; name?: string | null; slug?: string | null } | null;
   variantTitle?: string | null;
   variantSku?: string | null;
   size?: string | number | null;
@@ -77,7 +80,10 @@ function normalizeApiImage(
 
 function pickImage(item: CartItemApiResponse, title: string) {
   const variantImage = item.variant?.image ?? item.variant?.images?.[0];
-  const productImage = item.product?.image ?? item.product?.images?.[0];
+  const productImage =
+    item.product?.image ??
+    item.product?.images?.[0] ??
+    item.productImage;
   return normalizeApiImage(variantImage ?? productImage, title);
 }
 
@@ -146,7 +152,11 @@ function normalizeCartLine(
     productTitle: title,
     slug: item.product?.slug ?? item.productSlug ?? "",
     category:
-      item.product?.category?.title ?? item.product?.category?.name ?? undefined,
+      item.product?.category?.title ??
+      item.product?.category?.name ??
+      item.category?.title ??
+      item.category?.name ??
+      undefined,
     variantTitle: getVariantTitle(item),
     image: pickImage(item, title),
     quantity,
@@ -159,7 +169,10 @@ function normalizeCartLine(
     available,
     stockLabel: getStockLabel(inStock, availableQuantity),
     invalidReason:
-      invalidReason ?? item.invalidReason ?? item.reason ?? item.message ?? undefined,
+      invalidReason ??
+      humanizeCartInvalidReason(
+        item.invalidReason ?? item.reason ?? item.message,
+      ),
   };
 }
 
@@ -170,10 +183,12 @@ export function normalizeCart(payload: CartApiResponse): CartViewModel {
   const invalidLines = invalidItems.map((item) =>
     normalizeCartLine(
       item,
-      item.invalidReason ??
-        item.reason ??
-        item.message ??
-        "This item needs attention.",
+      humanizeCartInvalidReason(
+        item.invalidReason ??
+          item.reason ??
+          item.message ??
+          "This item needs attention.",
+      ) ?? "This item needs attention.",
     ),
   );
   const subtotal =

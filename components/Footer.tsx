@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
+import { CatalogNavLinks } from "./catalog/CatalogNavLinks";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -10,17 +11,9 @@ const footerBackgroundImage = "/assets/images/footer.png";
 
 const quickLinks = [
   { label: "Home", href: "/" },
-  { label: "Catalog", href: "/" },
-  { label: "New Arrivals", href: "/" },
-  { label: "All Collections", href: "/" },
+  { label: "New Arrivals", href: "/new-arrivals" },
+  { label: "All Collections", href: "/collections" },
   { label: "Contact Us", href: "/contact-us" },
-];
-
-const categories = [
-  { label: "Silk Suit", href: "/catalog/silk-suit" },
-  { label: "Muslin Suit", href: "/catalog/muslin-suit" },
-  { label: "Pakistani Suit", href: "/catalog/pakistani-suit" },
-  { label: "Cotton Suit", href: "/catalog/cotton-suit" },
 ];
 
 export default function Footer() {
@@ -65,19 +58,10 @@ export default function Footer() {
 
           <div>
             <h3 className="text-[24px] font-medium leading-none text-[#000]">
-              Categories
+              Catalogs
             </h3>
             <ul className="mt-6 space-y-3 text-[18px] text-[#000]">
-              {categories.map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className="transition-colors text-[#000] hover:text-[#c4ca38]"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+              <CatalogNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" />
             </ul>
           </div>
 

@@ -3,33 +3,71 @@ import type { ProductVariantViewModel } from "../../lib/storefront/types/viewMod
 type AddToCartPanelProps = {
   canAddToCart: boolean;
   isAdding: boolean;
+  inStock: boolean;
+  quantity: number;
+  maxQuantity: number;
   selectedVariant?: ProductVariantViewModel;
+  onQuantityChange: (quantity: number) => void;
   onAddToCart: () => void;
 };
 
 export default function AddToCartPanel({
   canAddToCart,
   isAdding,
+  inStock,
+  quantity,
+  maxQuantity,
   selectedVariant,
+  onQuantityChange,
   onAddToCart,
 }: AddToCartPanelProps) {
+  const canDecrease = quantity > 1;
+  const canIncrease = quantity < maxQuantity && inStock;
+
   return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        disabled={!canAddToCart}
-        onClick={onAddToCart}
-        className="h-14 w-full rounded-full bg-[#1f1a14] px-8 text-[13px] font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#3a3329] disabled:cursor-not-allowed disabled:bg-[#c9c0b0] disabled:text-white/80"
-      >
-        {isAdding
-          ? "Adding to bag"
-          : selectedVariant
-            ? "Add to cart"
-            : "Selectable variant unavailable"}
-      </button>
-      <p className="text-center text-[12px] leading-5 text-[#7a7469]">
-        Prices and stock are revalidated by the backend cart and checkout quote.
-      </p>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <div className="inline-flex h-12 shrink-0 items-center rounded-full border border-[#d9d9d9] bg-white">
+          <button
+            type="button"
+            disabled={!canDecrease}
+            onClick={() => onQuantityChange(quantity - 1)}
+            className="grid h-12 w-12 place-items-center text-[18px] text-[#333] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:text-[#bbb]"
+            aria-label="Decrease quantity"
+          >
+            −
+          </button>
+          <span className="min-w-10 text-center text-[15px] font-medium text-[#111]">
+            {quantity}
+          </span>
+          <button
+            type="button"
+            disabled={!canIncrease}
+            onClick={() => onQuantityChange(quantity + 1)}
+            className="grid h-12 w-12 place-items-center text-[18px] text-[#333] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:text-[#bbb]"
+            aria-label="Increase quantity"
+          >
+            +
+          </button>
+        </div>
+
+        <button
+          type="button"
+          disabled={!canAddToCart}
+          onClick={onAddToCart}
+          className={`h-12 flex-1 rounded-full px-6 text-[13px] font-semibold uppercase tracking-[0.14em] transition-colors ${
+            inStock
+              ? "bg-[#111] text-white hover:bg-[#333] disabled:cursor-not-allowed disabled:bg-[#c9c0b0]"
+              : "cursor-not-allowed bg-[#e8e8e8] text-[#666]"
+          }`}
+        >
+          {isAdding ? "Adding..." : inStock ? "Add to cart" : "Sold out"}
+        </button>
+      </div>
+
+      {!selectedVariant ? (
+        <p className="text-[13px] text-[#9a3f3f]">Please select an available variant.</p>
+      ) : null}
     </div>
   );
 }

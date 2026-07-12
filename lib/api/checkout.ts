@@ -1,5 +1,9 @@
 import { apiGet, apiPost } from "./client";
 import { formatCurrency } from "../storefront/commerce";
+import {
+  humanizeUnavailableReason,
+  resolveUnavailableItemTitle,
+} from "../storefront/unavailableItem";
 import type { CartLineViewModel } from "../cart/types";
 
 export type CheckoutAddress = {
@@ -53,6 +57,11 @@ type UnavailableItemApiResponse = {
   quantity?: number;
   title?: string | null;
   productTitle?: string | null;
+  variantSku?: string | null;
+  variantLabel?: string | null;
+  variantTitle?: string | null;
+  size?: string | number | null;
+  color?: string | number | null;
   reason?: string | null;
   message?: string | null;
   available?: number | null;
@@ -114,6 +123,7 @@ export type OrderStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "EXPIRED
 
 type OrderStatusApiResponse = {
   orderId?: string;
+  orderNumber?: string;
   orderStatus?: string;
   status?: OrderStatus | string;
   paymentStatus?: OrderStatus | string;
@@ -174,6 +184,7 @@ export type RazorpayPrepareViewModel = {
 
 export type OrderStatusViewModel = {
   orderId?: string;
+  orderNumber?: string;
   status: OrderStatus;
   retryable: boolean;
   message: string;
@@ -208,6 +219,29 @@ function toBackendAddress(address: CheckoutAddress): BackendCheckoutAddress {
   };
 }
 
+function enrichUnavailableItemsFromCart(
+  items: QuoteViewModel["unavailableItems"],
+  cartLines?: CartLineViewModel[],
+) {
+  if (!cartLines?.length) return items;
+
+  return items.map((item) => {
+    if (item.title !== "Unavailable item") return item;
+
+    const match = cartLines.find(
+      (line) =>
+        line.productId === item.productId && line.variantId === item.variantId,
+    );
+    if (!match) return item;
+
+    const variantSuffix = match.variantTitle ? ` (${match.variantTitle})` : "";
+    return {
+      ...item,
+      title: `${match.productTitle}${variantSuffix}`,
+    };
+  });
+}
+
 function normalizeQuote(payload: QuoteApiResponse): QuoteViewModel {
   const lines = (payload.lines ?? payload.items ?? []).map(normalizeQuoteLine);
   const unavailableItems = [
@@ -216,14 +250,11 @@ function normalizeQuote(payload: QuoteApiResponse): QuoteViewModel {
   ].map((item) => ({
     productId: item.productId,
     variantId: item.variantId,
-    title:
-      item.title?.trim() ||
-      item.productTitle?.trim() ||
-      (item.variantId ? `Variant ${item.variantId}` : "Unavailable item"),
-    reason:
-      item.reason?.trim() ||
-      item.message?.trim() ||
-      "This item is no longer available for checkout.",
+    title: resolveUnavailableItemTitle(item),
+    reason: humanizeUnavailableReason(
+      item.reason ?? item.message,
+      item.available,
+    ),
   }));
   const subtotal = coerceNumber(payload.subtotal);
   const shipping = coerceNumber(payload.shipping);
@@ -241,7 +272,7 @@ function normalizeQuote(payload: QuoteApiResponse): QuoteViewModel {
     tax,
     total,
     formattedSubtotal: formatCurrency(subtotal),
-    formattedShipping: formatCurrency(shipping),
+    formattedShipping: shipping <= 0 ? "Free" : formatCurrency(shipping),
     formattedTax: formatCurrency(tax),
     formattedTotal: formatCurrency(total),
     expiresAt: payload.expiresAt ?? undefined,
@@ -312,6 +343,7 @@ function normalizeOrderStatus(payload: OrderStatusApiResponse): OrderStatusViewM
 
   return {
     orderId: payload.orderId,
+    orderNumber: payload.orderNumber,
     status,
     retryable: Boolean(payload.retryable),
     message:
@@ -338,16 +370,25 @@ export function cartLinesToCheckoutPayload(
 export async function quoteOrder({
   lines,
   address,
+  cartLines,
 }: {
   lines: CheckoutLinePayload[];
   address: CheckoutAddress;
+  cartLines?: CartLineViewModel[];
 }) {
   const result = await apiPost<QuoteApiResponse>(
     "/orders/quote",
     { items: lines, address: toBackendAddress(address) },
     { auth: true },
   );
-  return normalizeQuote(result.data ?? {});
+  const quote = normalizeQuote(result.data ?? {});
+  return {
+    ...quote,
+    unavailableItems: enrichUnavailableItemsFromCart(
+      quote.unavailableItems,
+      cartLines,
+    ),
+  };
 }
 
 export async function createOrder({

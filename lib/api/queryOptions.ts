@@ -6,6 +6,7 @@ import {
   type GetProductsParams,
 } from "./products";
 import { getCategories, getCategoryBySlug } from "./categories";
+import { getCatalogBySlug, getCatalogNavItems, type GetCatalogBySlugParams } from "./catalogs";
 import { storefrontQueryKeys } from "./queryKeys";
 
 export function productsQueryOptions(params?: GetProductsParams) {
@@ -39,5 +40,24 @@ export function categoryDetailQueryOptions(slug: string) {
     queryFn: () => getCategoryBySlug(slug),
     enabled: Boolean(slug),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function catalogNavQueryOptions() {
+  return queryOptions({
+    queryKey: storefrontQueryKeys.catalogs.nav(),
+    queryFn: getCatalogNavItems,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function catalogDetailQueryOptions(params: GetCatalogBySlugParams) {
+  const page = params.page ?? 1;
+
+  return queryOptions({
+    queryKey: storefrontQueryKeys.catalogs.detail(params.slug, page),
+    queryFn: () => getCatalogBySlug({ ...params, page }),
+    enabled: Boolean(params.slug),
+    staleTime: 60 * 1000,
   });
 }

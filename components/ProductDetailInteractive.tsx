@@ -7,6 +7,8 @@ import ProductSummaryPanel from "./product-detail/ProductSummaryPanel";
 import { useProductDetailSelection } from "./product-detail/useProductDetailSelection";
 import type { ProductDetailViewModel } from "../lib/storefront/types/viewModels";
 
+const MAX_CART_QUANTITY = 10;
+
 export default function ProductDetailInteractive({
   product,
 }: {
@@ -14,6 +16,7 @@ export default function ProductDetailInteractive({
 }) {
   const { addLine, openCart, isLoading: cartIsLoading } = useCartSidebar();
   const [isAdding, setIsAdding] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const {
     selectableVariants,
     selectedVariant,
@@ -23,7 +26,20 @@ export default function ProductDetailInteractive({
     stockLabel,
     inStock,
   } = useProductDetailSelection(product);
+  const maxQuantity = Math.min(
+    selectedVariant?.stockQuantity ?? MAX_CART_QUANTITY,
+    MAX_CART_QUANTITY,
+  );
   const canAddToCart = Boolean(selectedVariant) && inStock && !cartIsLoading && !isAdding;
+
+  function handleVariantChange(variantId: string) {
+    setSelectedVariantId(variantId);
+    setQuantity(1);
+  }
+
+  function handleQuantityChange(nextQuantity: number) {
+    setQuantity(Math.min(Math.max(1, nextQuantity), maxQuantity));
+  }
 
   async function handleAddToCart() {
     if (!selectedVariant || isAdding) return;
@@ -33,7 +49,7 @@ export default function ProductDetailInteractive({
       await addLine({
         productId: product.id,
         variantId: selectedVariant.id,
-        quantity: 1,
+        quantity,
         productTitle: product.title,
         slug: product.slug,
         category: product.category?.title,
@@ -52,7 +68,7 @@ export default function ProductDetailInteractive({
   }
 
   return (
-    <div className="mt-8 grid grid-cols-1 gap-8 lg:mt-10 lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.9fr)] lg:items-start lg:gap-12 xl:gap-16">
+    <div className="mt-8 grid grid-cols-1 gap-8 lg:mt-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,420px)] lg:items-start lg:gap-10 xl:gap-14">
       <ProductHeroGallery
         key={selectedVariant?.id ?? product.id}
         images={selectedImages}
@@ -67,7 +83,10 @@ export default function ProductDetailInteractive({
         inStock={inStock}
         canAddToCart={canAddToCart}
         isAdding={isAdding}
-        onVariantChange={setSelectedVariantId}
+        quantity={quantity}
+        maxQuantity={maxQuantity}
+        onQuantityChange={handleQuantityChange}
+        onVariantChange={handleVariantChange}
         onAddToCart={() => void handleAddToCart()}
       />
     </div>
