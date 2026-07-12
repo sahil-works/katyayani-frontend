@@ -2,9 +2,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-readonly APP_NAME="katyayani-storefront"
-readonly IMAGE_TAG="${APP_NAME}:production"
-readonly PORT=3200
+readonly APP_NAME="katyayani-storefront-production"
+readonly IMAGE_TAG="katyayani-storefront:production"
+readonly PORT=3201
 readonly PARAM_PATH="/katyayani/production/frontend"
 readonly HEALTH_URL="http://127.0.0.1:${PORT}/api/health"
 readonly HEALTH_RETRIES=12
