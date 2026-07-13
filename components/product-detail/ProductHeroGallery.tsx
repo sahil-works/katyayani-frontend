@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PRODUCT_IMAGE_FALLBACK } from "../../lib/storefront/commerce";
 import type { StorefrontImageViewModel } from "../../lib/storefront/types/viewModels";
 import { StorefrontImage } from "../storefront/StorefrontImage";
+import { ProductImageZoom } from "./ProductImageZoom";
 
 type ProductHeroGalleryProps = {
   images: StorefrontImageViewModel[];
@@ -76,14 +77,16 @@ export default function ProductHeroGallery({
               : "aspect-[3/4] min-h-[420px] sm:aspect-[4/5] sm:min-h-[520px] lg:min-h-[680px]"
           }`}
         >
-          <StorefrontImage
-            image={activeImage}
-            fallbackAlt={productName}
-            fill
-            priority
-            className="object-contain object-center transition-transform duration-500"
-            sizes="(min-width: 1024px) 58vw, 100vw"
-          />
+          <ProductImageZoom key={activeImage.src} className="absolute inset-0">
+            <StorefrontImage
+              image={activeImage}
+              fallbackAlt={productName}
+              fill
+              priority
+              className="object-contain object-center"
+              sizes="(min-width: 1024px) 58vw, 100vw"
+            />
+          </ProductImageZoom>
 
           {hasMultipleImages ? (
             <div className="absolute bottom-5 right-5 flex items-center gap-2">
