@@ -79,15 +79,15 @@ export function ProductImageZoom({ children, className }: ProductImageZoomProps)
   return (
     <div
       ref={containerRef}
-      className={`relative h-full w-full overflow-hidden ${
-        canHoverZoom ? "cursor-zoom-in" : ""
-      } ${className ?? ""}`}
+      className={`overflow-hidden ${canHoverZoom ? "cursor-zoom-in" : ""} ${
+        className ?? "relative h-full w-full"
+      }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
     >
       <div
-        className="absolute inset-0 transition-transform duration-200 ease-out motion-reduce:transition-none"
+        className="relative h-full w-full transition-transform duration-200 ease-out motion-reduce:transition-none"
         style={{
           transform: isZooming ? `scale(${ZOOM_SCALE})` : undefined,
           transformOrigin,

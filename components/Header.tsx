@@ -17,7 +17,7 @@ const dancingScript = Dancing_Script({
 
 const navItems = [
   { label: "Home", href: "/" },
-  { label: "Catalog", href: "/" },
+  { label: "Category", href: "/" },
   { label: "New Arrivals", href: "/new-arrivals" },
   { label: "All collections", href: "/collections" },
   { label: "Contact us", href: "/contact-us" },
@@ -122,7 +122,7 @@ export default function Header() {
 
         <nav className="hidden flex-1 items-center justify-center gap-10 text-[18px] text-[#2f2f2f] lg:flex">
           {navItems.map((item) =>
-            item.label === "Catalog" ? (
+            item.label === "Category" ? (
               <div key={item.label} className="group relative">
                 <button
                   type="button"
