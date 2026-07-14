@@ -8,7 +8,8 @@ import { useCartSidebar } from "./CartSidebar";
 import { useLoginModal } from "./LoginModal";
 import { useSearchSidebar } from "./SearchSidebar";
 import { useAuth } from "../providers/AuthProvider";
-import { CatalogMenuLinks } from "./catalog/CatalogNavLinks";
+// import { CatalogMenuLinks } from "./catalog/CatalogNavLinks";
+import { CategoryMenuLinks } from "./categories/CategoryNavLinks";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -133,7 +134,8 @@ export default function Header() {
                   <ChevronDownIcon />
                 </button>
                 <div className="invisible absolute left-1/2 top-full z-20 mt-4 w-60 -translate-x-1/2 rounded-xl border border-[#e9e9e9] bg-white p-2 opacity-0 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                  <CatalogMenuLinks />
+                  {/* <CatalogMenuLinks /> */}
+                  <CategoryMenuLinks />
                 </div>
               </div>
             ) : (

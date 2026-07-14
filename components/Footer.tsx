@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
-import { CatalogNavLinks } from "./catalog/CatalogNavLinks";
+// import { CatalogNavLinks } from "./catalog/CatalogNavLinks";
+import { CategoryNavLinks } from "./categories/CategoryNavLinks";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -61,7 +62,8 @@ export default function Footer() {
               Category
             </h3>
             <ul className="mt-6 space-y-3 text-[18px] text-[#000]">
-              <CatalogNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" />
+              {/* <CatalogNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" /> */}
+              <CategoryNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" />
             </ul>
           </div>
 
