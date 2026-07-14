@@ -5,10 +5,86 @@ on:
     branches:
       - main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+concurrency:
+  group: deploy-frontend-production
+  cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  publish:
+    name: Build and publish production image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Load build args from SSM via EC2
+        id: build_args
+        run: |
+          set -euo pipefail
+          PARAM_PATH="/katyayani/production/frontend"
+          SSH=(ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}")
+          APP_URL="$("${SSH[@]}" aws ssm get-parameter --name "${PARAM_PATH}/NEXT_PUBLIC_APP_URL" --query Parameter.Value --output text)"
+          API_URL="$("${SSH[@]}" aws ssm get-parameter --name "${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL" --query Parameter.Value --output text)"
+          RAZORPAY_KEY="$("${SSH[@]}" aws ssm get-parameter --name "${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID" --query Parameter.Value --output text)"
+          echo "app_url=${APP_URL}" >> "$GITHUB_OUTPUT"
+          echo "api_url=${API_URL}" >> "$GITHUB_OUTPUT"
+          echo "razorpay_key=${RAZORPAY_KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export image reference
+        id: image
+        run: |
+          image_name="${REGISTRY}/${IMAGE_NAME}"
+          echo "image=${image_name,,}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-production
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ steps.build_args.outputs.app_url }}
+            NEXT_PUBLIC_API_BASE_URL=${{ steps.build_args.outputs.api_url }}
+            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ steps.build_args.outputs.razorpay_key }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy production on EC2
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,13 +97,18 @@ jobs:
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+          GHCR_PULL_TOKEN: ${{ secrets.DOCKER_REGISTRY_TOKEN || github.token }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -euo pipefail
             cd /opt/katyayani-storefront
-
             git fetch origin
             git reset --hard origin/main
-
             chmod +x scripts/deploy-production.sh
+            export IMAGE='${IMAGE}'
+            export GHCR_PULL_TOKEN='${GHCR_PULL_TOKEN}'
             ./scripts/deploy-production.sh
           EOF
