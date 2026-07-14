@@ -10,8 +10,6 @@ readonly HEALTH_URL="http://127.0.0.1:${PORT}/api/health"
 readonly HEALTH_RETRIES=12
 readonly HEALTH_INTERVAL=5
 
-export BUILDKIT_PROGRESS=plain
-
 log() {
   printf '[deploy-staging] %s\n' "$*"
 }
@@ -34,53 +32,50 @@ require_command() {
   command -v "${command_name}" >/dev/null 2>&1 || fail "${command_name} is required but not installed"
 }
 
-has_buildkit() {
-  docker buildx version >/dev/null 2>&1
-}
-
-prepare_docker() {
-  log "Checking disk space"
-  df -h / /var/lib/docker 2>/dev/null || df -h /
-
-  log "Removing local build artifacts from deploy context"
-  rm -rf node_modules .next .npm
+recover_docker_storage() {
+  local restart_docker="${1:-false}"
 
   log "Pruning stale Docker cache"
   docker builder prune -af >/dev/null 2>&1 || true
   docker system prune -af >/dev/null 2>&1 || true
+
+  if [[ "${restart_docker}" == "true" ]]; then
+    log "Restarting Docker daemon"
+    if command -v systemctl >/dev/null 2>&1; then
+      sudo systemctl restart docker >/dev/null 2>&1 || true
+    elif command -v service >/dev/null 2>&1; then
+      sudo service docker restart >/dev/null 2>&1 || true
+    fi
+    sleep 5
+  fi
 }
 
-build_image() {
+login_registry() {
+  local token="${GHCR_PULL_TOKEN:-${DOCKER_REGISTRY_TOKEN:-}}"
+  if [[ -n "${token}" ]]; then
+    log "Logging in to ghcr.io"
+    echo "${token}" | docker login ghcr.io -u "${GHCR_USERNAME:-github}" --password-stdin >/dev/null
+  fi
+}
+
+pull_image_with_retry() {
+  local image="$1"
   local attempt=1
-  local max_attempts=2
+  local max_attempts=3
 
   while (( attempt <= max_attempts )); do
-    if has_buildkit; then
-      export DOCKER_BUILDKIT=1
-      log "Using Docker BuildKit (attempt ${attempt}/${max_attempts})"
-    else
-      unset DOCKER_BUILDKIT
-      log "BuildKit unavailable; using legacy Docker builder (attempt ${attempt}/${max_attempts})"
-    fi
-
-    if docker build \
-      --build-arg NEXT_PUBLIC_APP_URL="${APP_URL}" \
-      --build-arg NEXT_PUBLIC_API_BASE_URL="${API_URL}" \
-      --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${RAZORPAY_KEY}" \
-      -t "${IMAGE_TAG}" \
-      .; then
+    if docker pull "${image}"; then
+      log "Pulled image ${image}"
       return 0
     fi
 
-    if (( attempt == max_attempts )); then
-      return 1
-    fi
-
-    log "Docker build failed; pruning cache and retrying"
-    docker builder prune -af >/dev/null 2>&1 || true
-    docker system prune -af >/dev/null 2>&1 || true
+    log "Image pull failed (attempt ${attempt}/${max_attempts})"
+    recover_docker_storage "$([[ "${attempt}" -ge 2 ]] && echo true || echo false)"
+    sleep $((attempt * 5))
     attempt=$((attempt + 1))
   done
+
+  return 1
 }
 
 wait_for_health() {
@@ -101,41 +96,77 @@ wait_for_health() {
   fail "Health check failed after ${HEALTH_RETRIES} attempts (${HEALTH_URL})"
 }
 
-cleanup_images() {
-  log "Pruning dangling Docker images"
-  docker image prune -f >/dev/null
+deploy_pulled_image() {
+  local image="$1"
+
+  login_registry
+  recover_docker_storage false
+  pull_image_with_retry "${image}" || fail "Failed to pull image ${image}"
+
+  log "Stopping existing container ${APP_NAME}"
+  docker stop "${APP_NAME}" >/dev/null 2>&1 || true
+  docker rm "${APP_NAME}" >/dev/null 2>&1 || true
+
+  log "Starting container ${APP_NAME} on port ${PORT} from ${image}"
+  docker run -d \
+    --name "${APP_NAME}" \
+    --restart unless-stopped \
+    -p "${PORT}:3000" \
+    "${image}" >/dev/null
+
+  wait_for_health
+  docker image prune -f >/dev/null 2>&1 || true
+  log "Staging deployment completed successfully"
+}
+
+deploy_local_build() {
+  log "No prebuilt IMAGE provided; building locally (legacy mode)"
+  rm -rf node_modules .next .npm
+
+  log "Loading SSM parameters from ${PARAM_PATH}"
+  local app_url api_url razorpay_key
+  app_url="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_APP_URL")"
+  api_url="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL")"
+  razorpay_key="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID")"
+
+  [[ -n "${app_url}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_APP_URL is empty"
+  [[ -n "${api_url}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL is empty"
+  [[ -n "${razorpay_key}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID is empty"
+
+  recover_docker_storage false
+  log "Building image ${IMAGE_TAG}"
+  docker build \
+    --build-arg NEXT_PUBLIC_APP_URL="${app_url}" \
+    --build-arg NEXT_PUBLIC_API_BASE_URL="${api_url}" \
+    --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${razorpay_key}" \
+    -t "${IMAGE_TAG}" \
+    . || fail "Local Docker build failed"
+
+  log "Stopping existing container ${APP_NAME}"
+  docker stop "${APP_NAME}" >/dev/null 2>&1 || true
+  docker rm "${APP_NAME}" >/dev/null 2>&1 || true
+
+  log "Starting container ${APP_NAME} on port ${PORT}"
+  docker run -d \
+    --name "${APP_NAME}" \
+    --restart unless-stopped \
+    -p "${PORT}:3000" \
+    "${IMAGE_TAG}" >/dev/null
+
+  wait_for_health
+  docker image prune -f >/dev/null 2>&1 || true
+  log "Staging deployment completed successfully"
 }
 
 require_command aws
 require_command docker
 require_command curl
 
-prepare_docker
+log "Checking disk space"
+df -h / /var/lib/docker 2>/dev/null || df -h /
 
-log "Loading SSM parameters from ${PARAM_PATH}"
-APP_URL="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_APP_URL")"
-API_URL="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL")"
-RAZORPAY_KEY="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID")"
-
-[[ -n "${APP_URL}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_APP_URL is empty"
-[[ -n "${API_URL}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_API_BASE_URL is empty"
-[[ -n "${RAZORPAY_KEY}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID is empty"
-
-log "Building image ${IMAGE_TAG}"
-build_image || fail "Docker build failed after retrying"
-
-log "Stopping existing container ${APP_NAME}"
-docker stop "${APP_NAME}" >/dev/null 2>&1 || true
-docker rm "${APP_NAME}" >/dev/null 2>&1 || true
-
-log "Starting container ${APP_NAME} on port ${PORT}"
-docker run -d \
-  --name "${APP_NAME}" \
-  --restart unless-stopped \
-  -p "${PORT}:3000" \
-  "${IMAGE_TAG}" >/dev/null
-
-wait_for_health
-cleanup_images
-
-log "Staging deployment completed successfully"
+if [[ -n "${IMAGE:-}" ]]; then
+  deploy_pulled_image "${IMAGE}"
+else
+  deploy_local_build
+fi
