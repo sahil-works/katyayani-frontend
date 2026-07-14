@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand } from "lucide-react";
 import { PRODUCT_IMAGE_FALLBACK } from "../../lib/storefront/commerce";
 import type { StorefrontImageViewModel } from "../../lib/storefront/types/viewModels";
 import { StorefrontImage } from "../storefront/StorefrontImage";
-import { ProductImageZoom } from "./ProductImageZoom";
+import { ProductImageLightbox } from "./ProductImageLightbox";
 
 type ProductHeroGalleryProps = {
   images: StorefrontImageViewModel[];
@@ -21,6 +21,7 @@ export default function ProductHeroGallery({
       ? images
       : [{ src: PRODUCT_IMAGE_FALLBACK, alt: productName }];
   const [active, setActive] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const hasMultipleImages = safeImages.length > 1;
   const activeImage = safeImages[active] ?? safeImages[0];
 
@@ -77,19 +78,28 @@ export default function ProductHeroGallery({
               : "aspect-[3/4] min-h-[420px] sm:aspect-[4/5] sm:min-h-[520px] lg:min-h-[680px]"
           }`}
         >
-          <ProductImageZoom key={activeImage.src} className="absolute inset-0">
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="group absolute inset-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9ea600]"
+            aria-label={`View ${productName} image ${active + 1} full screen`}
+          >
             <StorefrontImage
+              key={activeImage.src}
               image={activeImage}
               fallbackAlt={productName}
               fill
               priority
-              className="object-contain object-center"
+              className="object-contain object-center transition-opacity duration-200 group-hover:opacity-95"
               sizes="(min-width: 1024px) 58vw, 100vw"
             />
-          </ProductImageZoom>
+            <span className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+              <Expand className="h-4.5 w-4.5" strokeWidth={1.7} aria-hidden />
+            </span>
+          </button>
 
           {hasMultipleImages ? (
-            <div className="absolute bottom-5 right-5 flex items-center gap-2">
+            <div className="absolute bottom-5 right-5 z-10 flex items-center gap-2">
               <button
                 type="button"
                 onClick={showPreviousImage}
@@ -114,6 +124,15 @@ export default function ProductHeroGallery({
           Image {active + 1} of {safeImages.length} selected.
         </p>
       </div>
+
+      <ProductImageLightbox
+        images={safeImages}
+        productName={productName}
+        activeIndex={active}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        onActiveIndexChange={setActive}
+      />
     </section>
   );
 }
