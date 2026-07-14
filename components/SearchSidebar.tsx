@@ -160,7 +160,7 @@ export function SearchSidebar() {
           }}
         >
           <label htmlFor="product-search" className="sr-only">
-            Search products
+            Search by name or SKU
           </label>
           <div className="relative flex items-end border-b border-[#e0e0e0] pb-2">
             <input
@@ -168,7 +168,7 @@ export function SearchSidebar() {
               id="product-search"
               type="search"
               name="q"
-              placeholder="Search Products..."
+              placeholder="Search name or SKU..."
               autoComplete="off"
               className="w-full min-w-0 border-0 bg-transparent pr-10 text-[18px] font-medium text-[#2f2f2f] placeholder:text-[#8a8a8a] outline-none focus:ring-0"
             />
