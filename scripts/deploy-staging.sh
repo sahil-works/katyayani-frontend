@@ -45,17 +45,42 @@ prepare_docker() {
   log "Removing local build artifacts from deploy context"
   rm -rf node_modules .next .npm
 
-  log "Pruning stale Docker builder cache"
+  log "Pruning stale Docker cache"
   docker builder prune -af >/dev/null 2>&1 || true
-  docker image prune -f >/dev/null 2>&1 || true
+  docker system prune -af >/dev/null 2>&1 || true
+}
 
-  if has_buildkit; then
-    export DOCKER_BUILDKIT=1
-    log "Using Docker BuildKit"
-  else
-    unset DOCKER_BUILDKIT
-    log "BuildKit unavailable; using legacy Docker builder"
-  fi
+build_image() {
+  local attempt=1
+  local max_attempts=2
+
+  while (( attempt <= max_attempts )); do
+    if has_buildkit; then
+      export DOCKER_BUILDKIT=1
+      log "Using Docker BuildKit (attempt ${attempt}/${max_attempts})"
+    else
+      unset DOCKER_BUILDKIT
+      log "BuildKit unavailable; using legacy Docker builder (attempt ${attempt}/${max_attempts})"
+    fi
+
+    if docker build \
+      --build-arg NEXT_PUBLIC_APP_URL="${APP_URL}" \
+      --build-arg NEXT_PUBLIC_API_BASE_URL="${API_URL}" \
+      --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${RAZORPAY_KEY}" \
+      -t "${IMAGE_TAG}" \
+      .; then
+      return 0
+    fi
+
+    if (( attempt == max_attempts )); then
+      return 1
+    fi
+
+    log "Docker build failed; pruning cache and retrying"
+    docker builder prune -af >/dev/null 2>&1 || true
+    docker system prune -af >/dev/null 2>&1 || true
+    attempt=$((attempt + 1))
+  done
 }
 
 wait_for_health() {
@@ -97,12 +122,7 @@ RAZORPAY_KEY="$(ssm_get "${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID")"
 [[ -n "${RAZORPAY_KEY}" ]] || fail "SSM parameter ${PARAM_PATH}/NEXT_PUBLIC_RAZORPAY_KEY_ID is empty"
 
 log "Building image ${IMAGE_TAG}"
-docker build \
-  --build-arg NEXT_PUBLIC_APP_URL="${APP_URL}" \
-  --build-arg NEXT_PUBLIC_API_BASE_URL="${API_URL}" \
-  --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID="${RAZORPAY_KEY}" \
-  -t "${IMAGE_TAG}" \
-  .
+build_image || fail "Docker build failed after retrying"
 
 log "Stopping existing container ${APP_NAME}"
 docker stop "${APP_NAME}" >/dev/null 2>&1 || true
