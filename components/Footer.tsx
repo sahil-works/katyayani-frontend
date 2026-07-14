@@ -63,7 +63,10 @@ export default function Footer() {
             </h3>
             <ul className="mt-6 space-y-3 text-[18px] text-[#000]">
               {/* <CatalogNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" /> */}
-              <CategoryNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" />
+              <CategoryNavLinks
+                limit={5}
+                linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]"
+              />
             </ul>
           </div>
 

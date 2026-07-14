@@ -8,14 +8,18 @@ import { buildProductListingHref } from "../../lib/storefront";
 type CategoryNavLinksProps = {
   linkClassName?: string;
   emptyClassName?: string;
+  limit?: number;
 };
 
 export function CategoryNavLinks({
   linkClassName = "transition-colors hover:text-[#c4ca38]",
   emptyClassName = "text-[16px] text-[#666]",
+  limit,
 }: CategoryNavLinksProps) {
   const categoriesQuery = useQuery(categoriesQueryOptions());
   const categories = categoriesQuery.data ?? [];
+  const visibleCategories =
+    typeof limit === "number" ? categories.slice(0, limit) : categories;
 
   if (categoriesQuery.isLoading) {
     return <li className={emptyClassName}>Loading categories…</li>;
@@ -27,7 +31,7 @@ export function CategoryNavLinks({
 
   return (
     <>
-      {categories.map((category) => (
+      {visibleCategories.map((category) => (
         <li key={category.id}>
           <Link
             href={buildProductListingHref({ categoryId: category.id })}
