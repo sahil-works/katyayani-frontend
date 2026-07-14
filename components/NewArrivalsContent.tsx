@@ -116,7 +116,7 @@ export default function NewArrivalsContent() {
                 htmlFor="catalog-q"
                 className="mb-2 block text-[14px] font-medium text-[#555]"
               >
-                Search products
+                Search by name or SKU
               </label>
               <div className="flex overflow-hidden rounded-lg border border-[#dedede] bg-white">
                 <input
@@ -124,7 +124,7 @@ export default function NewArrivalsContent() {
                   key={`q-${q ?? ""}`}
                   name="q"
                   defaultValue={q ?? ""}
-                  placeholder="Search..."
+                  placeholder="Search name or SKU..."
                   className="min-w-0 flex-1 px-3 py-2.5 text-[15px] outline-none"
                 />
                 <button
@@ -283,7 +283,7 @@ export default function NewArrivalsContent() {
             ) : products.length === 0 ? (
               <StorefrontEmptyState
                 title="No products found"
-                description="Try a different search, category, or tag."
+                description="Try a different product name, SKU, category, or tag."
               />
             ) : (
               <>
