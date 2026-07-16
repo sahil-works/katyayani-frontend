@@ -1,4 +1,4 @@
-const storeImage = "/assets/images/banner-two.png";
+const storeImage = "/assets/images/store-locations.png";
 
 export default function StoreLocationsSection() {
   return (
