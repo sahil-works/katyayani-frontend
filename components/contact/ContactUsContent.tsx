@@ -24,6 +24,38 @@ const dancingScript = Dancing_Script({
 
 const contactBannerImage = "/assets/images/sets.png";
 
+const DEFAULT_CONTACT_BLOCKS: ContactPageBlock[] = [
+  {
+    type: "location",
+    title: "Delhi Store",
+    lines: [
+      "Silver City Extension, Focal Point, Mirpur Dera Bassi, Punjab 140201",
+    ],
+  },
+  {
+    type: "phone",
+    title: "WhatsApp",
+    lines: ["+91 90418 35216", "+91 82839 90717"],
+  },
+  {
+    type: "email",
+    title: "Emails",
+    lines: ["katyayaniboutique91@gmail.com"],
+  },
+];
+
+function resolveContactBlocks(blocks?: ContactPageBlock[]): ContactPageBlock[] {
+  const source = blocks?.length ? blocks : DEFAULT_CONTACT_BLOCKS;
+  const phone = DEFAULT_CONTACT_BLOCKS.find((item) => item.type === "phone")!;
+  const email = DEFAULT_CONTACT_BLOCKS.find((item) => item.type === "email")!;
+
+  return source.map((block) => {
+    if (block.type === "phone") return phone;
+    if (block.type === "email") return email;
+    return block;
+  });
+}
+
 const blockIcons = {
   location: MapPin,
   phone: Phone,
@@ -154,6 +186,7 @@ export function ContactUsContent() {
   }
 
   const hero = settings?.contactPage;
+  const contactBlocks = resolveContactBlocks(hero?.blocks);
 
   return (
     <main className="min-h-[calc(100vh-96px)] bg-white text-[#111]">
@@ -194,7 +227,7 @@ export function ContactUsContent() {
               ))}
             </>
           ) : (
-            (hero?.blocks ?? []).map((block) => (
+            contactBlocks.map((block) => (
               <ContactBlock key={`${block.type}-${block.title}`} block={block} />
             ))
           )}
