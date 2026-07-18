@@ -76,18 +76,32 @@ export default function Footer() {
             </h3>
             <ul className="mt-6 space-y-3 text-[18px] leading-[1.55] text-[#000]">
               <li>Silver City Extension, Focal Point, Mirpur Dera Bassi, Punjab 140201</li>
-              
               <li>
-                <a href="tel:+919876543210" className="text-[#000] hover:text-[#c4ca38]">
-                  +91 98765 43210
+                <a
+                  href="https://wa.me/919041835216"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#000] hover:text-[#c4ca38]"
+                >
+                  WhatsApp: +91 90418 35216
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:info@katyayanidesignerhub.com"
+                  href="https://wa.me/918283990717"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[#000] hover:text-[#c4ca38]"
                 >
-                  info@katyayanidesignerhub.com
+                  WhatsApp: +91 82839 90717
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:katyayaniboutique91@gmail.com"
+                  className="text-[#000] hover:text-[#c4ca38]"
+                >
+                  katyayaniboutique91@gmail.com
                 </a>
               </li>
             </ul>
