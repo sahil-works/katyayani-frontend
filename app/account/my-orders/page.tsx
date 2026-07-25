@@ -63,7 +63,7 @@ export default function AccountOrdersPage() {
   }, [isAuthenticated]);
 
   return (
-    <section className="rounded-2xl border border-[#e6e8d9] bg-white p-6 sm:p-8">
+    <section className="rounded-2xl border border-[#f5d6e4] bg-white p-6 sm:p-8">
       <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#7b7b7b]">
         Purchases
       </p>
@@ -85,7 +85,7 @@ export default function AccountOrdersPage() {
           <p className="text-[15px] text-[#704040]">{error}</p>
         </div>
       ) : !orders || orders.length === 0 ? (
-        <div className="mt-7 rounded-xl border border-[#eceee0] bg-[#fbfcf8] p-6">
+        <div className="mt-7 rounded-xl border border-[#eceee0] bg-[#fefafc] p-6">
           <h2 className="text-[20px] font-semibold text-[#222]">
             No orders yet
           </h2>
@@ -95,7 +95,7 @@ export default function AccountOrdersPage() {
           </p>
           <Link
             href="/collections"
-            className="mt-5 inline-flex rounded-xl bg-[#9ea600] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#8f9500]"
+            className="mt-5 inline-flex rounded-xl bg-[#ea206d] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[#d01b60]"
           >
             Start shopping
           </Link>
@@ -106,7 +106,7 @@ export default function AccountOrdersPage() {
             <li key={order.id}>
               <Link
                 href={`/account/my-orders/${order.id}`}
-                className="flex flex-col gap-3 rounded-xl border border-[#eceee0] bg-[#fbfcf8] p-4 transition-colors hover:border-[#dadcc8] hover:bg-[#f6f8ee] sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-[#eceee0] bg-[#fefafc] p-4 transition-colors hover:border-[#e8c8d6] hover:bg-[#f6f8ee] sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2.5">
@@ -130,7 +130,7 @@ export default function AccountOrdersPage() {
                   <span className="text-[17px] font-semibold text-[#1f1f1f]">
                     {formatCurrency(order.price.total)}
                   </span>
-                  <span className="text-[#9ea600]" aria-hidden>
+                  <span className="text-[#ea206d]" aria-hidden>
                     →
                   </span>
                 </div>

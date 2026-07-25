@@ -15,7 +15,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 type ContactKind = "email" | "phone";
 
 const contactInputClass =
-  "mt-1.5 h-11 w-full rounded-xl border border-[#dbddca] bg-white px-3.5 text-[15px] outline-none focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/25";
+  "mt-1.5 h-11 w-full rounded-xl border border-[#f0d0de] bg-white px-3.5 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/25";
 
 function displayPhone(phone?: string) {
   if (!phone) return "Not added";
@@ -148,7 +148,7 @@ function ContactEditor({
     : "Change number";
 
   return (
-    <div className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] p-4">
+    <div className="rounded-xl border border-[#eceee0] bg-[#fefafc] p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[13px] text-[#777]">{label}</p>
         {isEmail && !value ? null : <VerificationBadge verified={verified} />}
@@ -179,8 +179,8 @@ function ContactEditor({
               className={contactInputClass}
             />
           ) : (
-            <div className="mt-1.5 flex h-11 overflow-hidden rounded-xl border border-[#dbddca] bg-white focus-within:border-[#9ea600] focus-within:ring-2 focus-within:ring-[#9ea600]/25">
-              <span className="flex items-center border-r border-[#dbddca] px-3 text-[15px] text-[#666]">
+            <div className="mt-1.5 flex h-11 overflow-hidden rounded-xl border border-[#f0d0de] bg-white focus-within:border-[#ea206d] focus-within:ring-2 focus-within:ring-[#ea206d]/25">
+              <span className="flex items-center border-r border-[#f0d0de] px-3 text-[15px] text-[#666]">
                 +91
               </span>
               <input
@@ -203,7 +203,7 @@ function ContactEditor({
               type="button"
               onClick={() => void handleStart()}
               disabled={busy}
-              className="cursor-pointer rounded-lg bg-[#9ea600] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#8f9500] disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg bg-[#ea206d] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#d01b60] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {busy ? "Sending..." : "Send code"}
             </button>
@@ -211,7 +211,7 @@ function ContactEditor({
               type="button"
               onClick={reset}
               disabled={busy}
-              className="cursor-pointer rounded-lg border border-[#dadcc8] px-4 py-2 text-[14px] font-medium text-[#333] transition-colors hover:bg-[#f2f3e9]"
+              className="cursor-pointer rounded-lg border border-[#e8c8d6] px-4 py-2 text-[14px] font-medium text-[#333] transition-colors hover:bg-[#fce8f0]"
             >
               Cancel
             </button>
@@ -247,7 +247,7 @@ function ContactEditor({
               type="button"
               onClick={() => void handleVerify()}
               disabled={busy}
-              className="cursor-pointer rounded-lg bg-[#9ea600] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#8f9500] disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-lg bg-[#ea206d] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#d01b60] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {busy ? "Verifying..." : "Verify"}
             </button>
@@ -342,7 +342,7 @@ export default function AccountProfilePage() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6 sm:p-8">
+      <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#7b7b7b]">
@@ -356,7 +356,7 @@ export default function AccountProfilePage() {
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="cursor-pointer rounded-xl border border-[#dadcc8] px-5 py-2.5 text-[15px] font-medium text-[#4c5200] transition-colors hover:bg-[#f8f9f0]"
+              className="cursor-pointer rounded-xl border border-[#e8c8d6] px-5 py-2.5 text-[15px] font-medium text-[#9a1548] transition-colors hover:bg-[#fdf0f5]"
             >
               Edit profile
             </button>
@@ -379,7 +379,7 @@ export default function AccountProfilePage() {
                 <input
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
-                  className="mt-1.5 h-11 w-full rounded-xl border border-[#dbddca] bg-white px-3.5 text-[15px] outline-none focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/25"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-[#f0d0de] bg-white px-3.5 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/25"
                   placeholder="First name"
                   maxLength={80}
                 />
@@ -391,7 +391,7 @@ export default function AccountProfilePage() {
                 <input
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
-                  className="mt-1.5 h-11 w-full rounded-xl border border-[#dbddca] bg-white px-3.5 text-[15px] outline-none focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/25"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-[#f0d0de] bg-white px-3.5 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/25"
                   placeholder="Last name"
                   maxLength={80}
                 />
@@ -407,7 +407,7 @@ export default function AccountProfilePage() {
                 type="button"
                 onClick={() => void handleSave()}
                 disabled={isSaving}
-                className="cursor-pointer rounded-xl bg-[#9ea600] px-6 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-[#8f9500] disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer rounded-xl bg-[#ea206d] px-6 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-[#d01b60] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save changes"}
               </button>
@@ -415,7 +415,7 @@ export default function AccountProfilePage() {
                 type="button"
                 onClick={cancelEdit}
                 disabled={isSaving}
-                className="cursor-pointer rounded-xl border border-[#dadcc8] px-6 py-2.5 text-[15px] font-medium text-[#333] transition-colors hover:bg-[#f8f9f0]"
+                className="cursor-pointer rounded-xl border border-[#e8c8d6] px-6 py-2.5 text-[15px] font-medium text-[#333] transition-colors hover:bg-[#fdf0f5]"
               >
                 Cancel
               </button>
@@ -423,13 +423,13 @@ export default function AccountProfilePage() {
           </div>
         ) : (
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] p-4">
+            <div className="rounded-xl border border-[#eceee0] bg-[#fefafc] p-4">
               <p className="text-[13px] text-[#777]">First name</p>
               <p className="mt-1 text-[18px] font-medium text-[#222]">
                 {user.firstName ?? "Not provided"}
               </p>
             </div>
-            <div className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] p-4">
+            <div className="rounded-xl border border-[#eceee0] bg-[#fefafc] p-4">
               <p className="text-[13px] text-[#777]">Last name</p>
               <p className="mt-1 text-[18px] font-medium text-[#222]">
                 {user.lastName ?? "Not provided"}
@@ -439,7 +439,7 @@ export default function AccountProfilePage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6 sm:p-8">
+      <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6 sm:p-8">
         <h2 className="text-[20px] font-semibold text-[#1f1f1f]">
           Contact details
         </h2>

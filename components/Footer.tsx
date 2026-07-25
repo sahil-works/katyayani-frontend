@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
 // import { CatalogNavLinks } from "./catalog/CatalogNavLinks";
 import { CategoryNavLinks } from "./categories/CategoryNavLinks";
+import AnimateOnView from "./AnimateOnView";
 
 const dancingScript = Dancing_Script({
   subsets: ["latin"],
@@ -27,19 +28,20 @@ export default function Footer() {
 
       <div className="relative mx-auto w-full max-w-[1320px] px-6 pb-6 pt-16 lg:px-10">
         <div className="grid grid-cols-1 gap-10 border-b border-white/20 pb-12 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <p
-              className={`${dancingScript.className} text-[30px] leading-none text-[#b7bd2d]`}
+          <AnimateOnView animation="fadeInUp" delay={0} duration={0.7}>
+            <Link
+              href="/"
+              className={`${dancingScript.className} text-[30px] leading-none text-[#ea206d]`}
             >
               Katyayani Designer Hub
-            </p>
+            </Link>
             <p className="mt-6 max-w-[300px] text-[18px] leading-[1.65] text-[#000]">
               Affordable designer styles for every day and special moments.
               Shop premium collections with trusted quality.
             </p>
-          </div>
+          </AnimateOnView>
 
-          <div>
+          <AnimateOnView animation="fadeInUp" delay={80} duration={0.7}>
             <h3 className="text-[24px] font-medium leading-none text-[#000]">
               Quick Links
             </h3>
@@ -48,29 +50,29 @@ export default function Footer() {
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    className="transition-colors text-[#000] hover:text-[#c4ca38]"
+                    className="transition-colors text-[#000] hover:text-[#ea206d]"
                   >
                     {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
-          </div>
+          </AnimateOnView>
 
-          <div>
+          <AnimateOnView animation="fadeInUp" delay={160} duration={0.7}>
             <h3 className="text-[24px] font-medium leading-none text-[#000]">
               Category
             </h3>
             <ul className="mt-6 space-y-3 text-[18px] text-[#000]">
-              {/* <CatalogNavLinks linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]" /> */}
+              {/* <CatalogNavLinks linkClassName="transition-colors text-[#000] hover:text-[#ea206d]" /> */}
               <CategoryNavLinks
                 limit={5}
-                linkClassName="transition-colors text-[#000] hover:text-[#c4ca38]"
+                linkClassName="transition-colors text-[#000] hover:text-[#ea206d]"
               />
             </ul>
-          </div>
+          </AnimateOnView>
 
-          <div>
+          <AnimateOnView animation="fadeInUp" delay={240} duration={0.7}>
             <h3 className="text-[24px] font-medium leading-none text-[#000]">
               Contact
             </h3>
@@ -81,7 +83,7 @@ export default function Footer() {
                   href="https://wa.me/919041835216"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#000] hover:text-[#c4ca38]"
+                  className="text-[#000] hover:text-[#ea206d]"
                 >
                   WhatsApp: +91 90418 35216
                 </a>
@@ -91,7 +93,7 @@ export default function Footer() {
                   href="https://wa.me/918283990717"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#000] hover:text-[#c4ca38]"
+                  className="text-[#000] hover:text-[#ea206d]"
                 >
                   WhatsApp: +91 82839 90717
                 </a>
@@ -99,19 +101,23 @@ export default function Footer() {
               <li>
                 <a
                   href="mailto:katyayaniboutique91@gmail.com"
-                  className="text-[#000] hover:text-[#c4ca38]"
+                  className="text-[#000] hover:text-[#ea206d]"
                 >
                   katyayaniboutique91@gmail.com
                 </a>
               </li>
             </ul>
-          </div>
+          </AnimateOnView>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-3 pt-6 text-[16px] text-black sm:flex-row">
+        <AnimateOnView
+          animation="fadeIn"
+          delay={100}
+          className="flex flex-col items-center justify-between gap-3 pt-6 text-[16px] text-black sm:flex-row"
+        >
           <p>Copyright {new Date().getFullYear()} Katyayani Designer Hub.</p>
           <p>All rights reserved.</p>
-        </div>
+        </AnimateOnView>
       </div>
     </footer>
   );

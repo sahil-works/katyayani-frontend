@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dancing_Script } from "next/font/google";
 import Link from "next/link";
 import { productsQueryOptions, type GetProductsParams } from "../lib/api";
+import AnimateOnView from "./AnimateOnView";
 import {
   StorefrontEmptyState,
   StorefrontErrorState,
@@ -52,19 +53,21 @@ export default function HomeProductSection({
     <section className={className}>
       <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-          <div>
+          <AnimateOnView animation="fadeInLeft" duration={0.8}>
             {eyebrow ? (
-              <p className={`${dancingScript.className} text-[24px] leading-none text-[#9ea600]`}>
+              <p className={`${dancingScript.className} text-[24px] leading-none text-[#ea206d]`}>
                 {eyebrow}
               </p>
             ) : null}
-            <h2 className={`${eyebrow ? "mt-3" : ""} text-[43px] leading-none font-medium text-[#111]`}>
+            <h2 className={`${eyebrow ? "mt-3" : ""} text-[36px] leading-none font-medium text-[#111]`}>
               {title}
             </h2>
-          </div>
-          <p className="max-w-[360px] pt-2 text-[19px] leading-[1.35] text-[#555] sm:text-right">
-            {description}
-          </p>
+          </AnimateOnView>
+          <AnimateOnView animation="fadeInRight" delay={120} duration={0.8}>
+            <p className="max-w-[360px] pt-2 text-[19px] leading-[1.35] text-[#555] sm:text-right">
+              {description}
+            </p>
+          </AnimateOnView>
         </div>
 
         {productsQuery.isLoading ? (
@@ -95,20 +98,25 @@ export default function HomeProductSection({
                 key={product.id}
                 product={product}
                 imagePriority={index < imagePriorityCount}
+                animationDelay={(index % 4) * 100}
               />
             ))}
           </div>
         )}
 
         {viewAllHref ? (
-          <div className="mt-10 flex justify-center">
+          <AnimateOnView
+            animation="fadeInUp"
+            delay={150}
+            className="mt-10 flex justify-center"
+          >
             <Link
               href={viewAllHref}
-              className="min-w-[118px] bg-[#9ea600] px-6 py-3 text-center text-[20px] font-medium text-white"
+              className="min-w-[118px] rounded-[5px] bg-[#ea206d] px-6 py-3 text-center text-[20px] font-medium text-white"
             >
               {viewAllLabel}
             </Link>
-          </div>
+          </AnimateOnView>
         ) : null}
       </div>
     </section>

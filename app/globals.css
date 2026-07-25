@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "FuturaBook";
+  src: url("/fonts/FuturaBook.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,8 +16,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Matches next/font Jost on <html> (see app/layout.tsx) */
-  --font-sans: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  /* Replaces Jost / Jost Fallback — Dancing Script stays via next/font */
+  --font-sans: "FuturaBook", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -23,7 +31,16 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: "FuturaBook", sans-serif;
 }
+
+button:not(.rounded-full),
+input[type="button"]:not(.rounded-full),
+input[type="submit"]:not(.rounded-full),
+input[type="reset"]:not(.rounded-full) {
+  border-radius: 5px !important;
+}
+
 ul.slick-dots {
   margin-top: 32px !important;
   display: flex  !important;
@@ -31,7 +48,7 @@ ul.slick-dots {
   position: static !important;
 }
 ul.slick-dots .slick-active span {
- background: #9ea600  !important;
+ background: #ea206d  !important;
 }
 
 /* /new-arrivals — filter checkboxes: brand green + white check */
@@ -53,17 +70,17 @@ ul.slick-dots .slick-active span {
 }
 
 .new-arrivals-checkbox:hover {
-  border-color: #9ea600;
+  border-color: #ea206d;
 }
 
 .new-arrivals-checkbox:focus-visible {
-  outline: 2px solid #9ea600;
+  outline: 2px solid #ea206d;
   outline-offset: 2px;
 }
 
 .new-arrivals-checkbox:checked {
-  background-color: #9ea600;
-  border-color: #7d8200;
+  background-color: #ea206d;
+  border-color: #c4195a;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
   background-size: 0.7rem 0.7rem;
   background-position: center;
@@ -82,7 +99,7 @@ ul.slick-dots .slick-active span {
   margin: 0;
   background: transparent;
   cursor: pointer;
-  accent-color: #9ea600;
+  accent-color: #ea206d;
 }
 
 .new-arrivals-range:focus-visible {
@@ -91,13 +108,13 @@ ul.slick-dots .slick-active span {
 
 .new-arrivals-range:focus-visible::-webkit-slider-thumb {
   box-shadow:
-    0 0 0 3px rgba(158, 166, 0, 0.25),
+    0 0 0 3px rgba(234, 32, 109, 0.25),
     0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
 .new-arrivals-range:focus-visible::-moz-range-thumb {
   box-shadow:
-    0 0 0 3px rgba(158, 166, 0, 0.25),
+    0 0 0 3px rgba(234, 32, 109, 0.25),
     0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
@@ -113,8 +130,8 @@ ul.slick-dots .slick-active span {
   border-radius: 9999px;
   background: linear-gradient(
     to right,
-    #9ea600 0%,
-    #9ea600 var(--range-progress),
+    #ea206d 0%,
+    #ea206d var(--range-progress),
     #e4e4e4 var(--range-progress),
     #e4e4e4 100%
   );
@@ -129,9 +146,9 @@ ul.slick-dots .slick-active span {
   margin-top: -7px;
   border-radius: 50%;
   background: #fff;
-  border: 3px solid #9ea600;
+  border: 3px solid #ea206d;
   box-shadow:
-    0 2px 8px rgba(158, 166, 0, 0.35),
+    0 2px 8px rgba(234, 32, 109, 0.35),
     0 1px 3px rgba(0, 0, 0, 0.08);
   transition:
     transform 0.15s ease,
@@ -141,7 +158,7 @@ ul.slick-dots .slick-active span {
 .new-arrivals-range:hover::-webkit-slider-thumb {
   transform: scale(1.06);
   box-shadow:
-    0 3px 12px rgba(158, 166, 0, 0.45),
+    0 3px 12px rgba(234, 32, 109, 0.45),
     0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -150,8 +167,8 @@ ul.slick-dots .slick-active span {
   border-radius: 9999px;
   background: linear-gradient(
     to right,
-    #9ea600 0%,
-    #9ea600 var(--range-progress),
+    #ea206d 0%,
+    #ea206d var(--range-progress),
     #e4e4e4 var(--range-progress),
     #e4e4e4 100%
   );
@@ -165,8 +182,8 @@ ul.slick-dots .slick-active span {
   border-radius: 50%;
   background: #fff;
   box-shadow:
-    0 0 0 3px #9ea600,
-    0 2px 8px rgba(158, 166, 0, 0.35),
+    0 0 0 3px #ea206d,
+    0 2px 8px rgba(234, 32, 109, 0.35),
     0 1px 3px rgba(0, 0, 0, 0.08);
   transition:
     transform 0.15s ease,
@@ -176,8 +193,8 @@ ul.slick-dots .slick-active span {
 .new-arrivals-range:hover::-moz-range-thumb {
   transform: scale(1.06);
   box-shadow:
-    0 0 0 3px #9ea600,
-    0 3px 12px rgba(158, 166, 0, 0.45),
+    0 0 0 3px #ea206d,
+    0 3px 12px rgba(234, 32, 109, 0.45),
     0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -227,5 +244,20 @@ ul.slick-dots .slick-active span {
 @media (prefers-reduced-motion: reduce) {
   .product-detail-care-ticker-track {
     animation-duration: 120s;
+  }
+}
+
+/* Hide elements until animate.css viewport animation starts */
+.animate-on-view-pending {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-view-pending {
+    opacity: 1;
+  }
+
+  .animate__animated {
+    animation: none !important;
   }
 }

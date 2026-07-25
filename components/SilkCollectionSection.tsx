@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { productsQueryOptions } from "../lib/api";
+import AnimateOnView from "./AnimateOnView";
 import {
   StorefrontEmptyState,
   StorefrontErrorState,
@@ -19,12 +20,14 @@ export default function SilkCollectionSection() {
   return (
     <section className="bg-[#f3f3f3] pt-14 sm:pt-16" aria-labelledby="silk-collection-heading">
       <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
-        <h2
-          id="silk-collection-heading"
-          className="mx-auto max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[32px] leading-none font-medium text-[#111] sm:text-[40px] lg:text-[43px]"
-        >
-          Silk Collection
-        </h2>
+        <AnimateOnView animation="fadeInDown" duration={0.75}>
+          <h2
+            id="silk-collection-heading"
+            className="mx-auto max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[32px] leading-none font-medium text-[#111] sm:text-[40px] lg:text-[36px]"
+          >
+            Silk Collection
+          </h2>
+        </AnimateOnView>
 
         {productsQuery.isLoading ? (
           <div className="mt-10">
@@ -60,6 +63,7 @@ export default function SilkCollectionSection() {
                 key={product.id}
                 product={product}
                 imagePriority={index < 3}
+                animationDelay={(index % 5) * 80}
               />
             ))}
           </div>

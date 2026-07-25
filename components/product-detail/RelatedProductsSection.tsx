@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { productsQueryOptions } from "../../lib/api";
+import AnimateOnView from "../AnimateOnView";
 import { ProductCard } from "../storefront/ProductCard";
 import {
   StorefrontErrorState,
@@ -83,9 +84,13 @@ export default function RelatedProductsSection({
   return (
     <section className="bg-[#fbfaf6] py-14 sm:py-18" aria-labelledby="related-products-heading">
       <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
-        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <AnimateOnView
+          animation="fadeInUp"
+          duration={0.75}
+          className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"
+        >
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#9ea600]">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#ea206d]">
               Curated for you
             </p>
             <h2
@@ -100,7 +105,7 @@ export default function RelatedProductsSection({
               ? "More pieces from the same collection mood."
               : "Featured edits selected for a similar boutique feel."}
           </p>
-        </div>
+        </AnimateOnView>
 
         <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product, index) => (
@@ -108,6 +113,7 @@ export default function RelatedProductsSection({
               key={product.id}
               product={product}
               imagePriority={index < 2}
+              animationDelay={(index % 4) * 100}
             />
           ))}
         </div>

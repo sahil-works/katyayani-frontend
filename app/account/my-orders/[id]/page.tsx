@@ -104,7 +104,7 @@ export default function OrderDetailPage() {
         </div>
       ) : !order ? null : (
         <>
-          <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6 sm:p-8">
+          <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6 sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#7b7b7b]">
@@ -126,7 +126,7 @@ export default function OrderDetailPage() {
 
             {order.trackingId || order.courierName ? (
               <div className="mt-5 rounded-xl border border-[#dfe7d5] bg-[#f4f8ee] p-4">
-                <p className="text-[13px] font-medium text-[#4c5200]">
+                <p className="text-[13px] font-medium text-[#9a1548]">
                   Shipment
                 </p>
                 <p className="mt-1 text-[15px] text-[#333]">
@@ -138,7 +138,7 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-            <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6 sm:p-8">
+            <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6 sm:p-8">
               <h2 className="text-[18px] font-semibold text-[#1f1f1f]">Items</h2>
               <ul className="mt-4 divide-y divide-[#eceee0]">
                 {order.items.map((item) => (
@@ -165,7 +165,7 @@ export default function OrderDetailPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6">
+              <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6">
                 <h2 className="text-[18px] font-semibold text-[#1f1f1f]">
                   Payment summary
                 </h2>
@@ -202,7 +202,7 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6">
+              <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6">
                 <h2 className="text-[18px] font-semibold text-[#1f1f1f]">
                   Delivery address
                 </h2>

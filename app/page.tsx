@@ -5,6 +5,7 @@ import ShopByCategoriesSection from "../components/ShopByCategoriesSection";
 import ShopLatestCollectionSection from "../components/ShopLatestCollectionSection";
 import StoreLocationsSection from "../components/StoreLocationsSection";
 import Footer from "../components/Footer";
+import AnimateOnView from "../components/AnimateOnView";
 import { Headset, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 
 const serviceHighlights = [
@@ -22,12 +23,15 @@ export default function Home() {
       <HeroBanner />
       <section className="border-y border-[#e7e7e7] bg-[#f6f6f6]">
         <div className="mx-auto grid min-h-[86px] max-w-[1320px] grid-cols-1 divide-y divide-[#e7e7e7] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4">
-          {serviceHighlights.map((item) => {
+          {serviceHighlights.map((item, index) => {
             const Icon = item.icon;
 
             return (
-              <div
+              <AnimateOnView
                 key={item.label}
+                animation="fadeInUp"
+                delay={index * 100}
+                duration={0.65}
                 className="flex items-center justify-center gap-3 px-4 py-4 text-[#151515]"
               >
                 <span className="grid h-15 w-15 place-items-center rounded-full border border-[#d1d1d1] bg-white">
@@ -36,7 +40,7 @@ export default function Home() {
                 <p className="text-[19px] leading-none font-medium">
                   {item.label}
                 </p>
-              </div>
+              </AnimateOnView>
             );
           })}
         </div>
@@ -68,7 +72,11 @@ export default function Home() {
             <span className="absolute right-0 bottom-0 h-[3px] w-full bg-white" />
           </div>
 
-          <div className="relative z-10 max-w-[850px]">
+          <AnimateOnView
+            animation="zoomIn"
+            duration={0.85}
+            className="relative z-10 max-w-[850px]"
+          >
             <h2 className="text-[28px] leading-[1.28] font-semibold sm:text-[42px]">
               Shop from Anywhere, Anytime! Enjoy Live Video Shopping from 11 AM
               - 7 PM
@@ -78,11 +86,11 @@ export default function Home() {
             </p>
             <button
               type="button"
-              className="mt-8 min-w-[118px] bg-[#9ea600] px-6 py-3 text-[20px] font-medium text-white"
+              className="mt-8 min-w-[118px] rounded-[5px] bg-[#ea206d] px-6 py-3 text-[20px] font-medium text-white"
             >
               Shop Now
             </button>
-          </div>
+          </AnimateOnView>
         </div>
       </section>
       <ShopLatestCollectionSection />

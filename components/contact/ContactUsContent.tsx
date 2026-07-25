@@ -4,6 +4,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { Dancing_Script } from "next/font/google";
 import { useEffect, useState } from "react";
 import Footer from "../Footer";
+import AnimateOnView from "../AnimateOnView";
 import {
   getContactSettings,
   submitContactInquiry,
@@ -27,7 +28,7 @@ const contactBannerImage = "/assets/images/sets.png";
 const DEFAULT_CONTACT_BLOCKS: ContactPageBlock[] = [
   {
     type: "location",
-    title: "Delhi Store",
+    title: "Store Location",
     lines: [
       "Silver City Extension, Focal Point, Mirpur Dera Bassi, Punjab 140201",
     ],
@@ -200,18 +201,20 @@ export function ContactUsContent() {
           aria-hidden
         />
         <div className="relative mx-auto flex min-h-[200px] max-w-[1320px] flex-col items-center justify-center px-6 py-14 text-center text-white sm:min-h-[260px] sm:py-16 lg:px-10">
-          <p
-            className={`${dancingScript.className} text-[22px] text-[#d4db5c] sm:text-[26px]`}
-          >
-            {hero?.heroEyebrow ?? "Let's connect"}
-          </p>
-          <h1 className="mt-3 max-w-[640px] text-[32px] font-semibold leading-tight tracking-tight sm:text-[42px] md:text-[46px]">
-            {hero?.heroTitle ?? "Contact Us"}
-          </h1>
-          <p className="mt-4 max-w-[520px] text-[16px] leading-relaxed text-white/90 sm:text-[18px]">
-            {hero?.heroSubtitle ??
-              "Visit our Mirpur Dera Bassi stores, call us, or write in — our team is happy to help with orders, styling, and more."}
-          </p>
+          <AnimateOnView animation="fadeInDown" duration={0.8}>
+            <p
+              className={`${dancingScript.className} text-[22px] text-[#ea206d] sm:text-[26px]`}
+            >
+              {hero?.heroEyebrow ?? "Let's connect"}
+            </p>
+            <h1 className="mt-3 max-w-[640px] text-[32px] font-semibold leading-tight tracking-tight sm:text-[42px] md:text-[46px]">
+              {hero?.heroTitle ?? "Contact Us"}
+            </h1>
+            <p className="mt-4 max-w-[520px] text-[16px] leading-relaxed text-white/90 sm:text-[18px]">
+              {hero?.heroSubtitle ??
+                "Visit our Mirpur Dera Bassi stores, call us, or write in — our team is happy to help with orders, styling, and more."}
+            </p>
+          </AnimateOnView>
         </div>
       </section>
 
@@ -227,19 +230,28 @@ export function ContactUsContent() {
               ))}
             </>
           ) : (
-            contactBlocks.map((block) => (
-              <ContactBlock key={`${block.type}-${block.title}`} block={block} />
+            contactBlocks.map((block, index) => (
+              <AnimateOnView
+                key={`${block.type}-${block.title}`}
+                animation="fadeInUp"
+                delay={index * 120}
+                duration={0.7}
+              >
+                <ContactBlock block={block} />
+              </AnimateOnView>
             ))
           )}
         </section>
 
         <section className="mx-auto max-w-[640px] pt-14 text-center lg:pt-16">
-          <h2 className="text-[28px] font-semibold tracking-tight text-black sm:text-[34px]">
-            Got Any Questions?
-          </h2>
-          <p className="mt-3 text-[16px] text-[#6b6b6b]">
-            Use the form below to get in touch with the sales team
-          </p>
+          <AnimateOnView animation="fadeInUp" duration={0.75}>
+            <h2 className="text-[28px] font-semibold tracking-tight text-black sm:text-[34px]">
+              Got Any Questions?
+            </h2>
+            <p className="mt-3 text-[16px] text-[#6b6b6b]">
+              Use the form below to get in touch with the sales team
+            </p>
+          </AnimateOnView>
 
           {submitted ? (
             <div className="mt-10 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-left">
@@ -253,7 +265,7 @@ export function ContactUsContent() {
               <button
                 type="button"
                 onClick={() => setSubmitted(false)}
-                className="mt-5 cursor-pointer text-[14px] font-medium text-[#4c5200] underline underline-offset-2"
+                className="mt-5 cursor-pointer text-[14px] font-medium text-[#9a1548] underline underline-offset-2"
               >
                 Send another message
               </button>
@@ -362,7 +374,7 @@ export function ContactUsContent() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-13 cursor-pointer rounded-none bg-[#9ea600] px-9 text-[19px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-13 cursor-pointer rounded-[5px] bg-[#ea206d] px-9 text-[19px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? "Sending..." : "Send"}
                 </button>

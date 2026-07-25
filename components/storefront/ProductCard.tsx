@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProductCardViewModel } from "../../lib/storefront/types/viewModels";
+import AnimateOnView from "../AnimateOnView";
 import { ProductPriceDisplay } from "./ProductPriceDisplay";
 import { StorefrontImage } from "./StorefrontImage";
 
@@ -7,17 +8,24 @@ type ProductCardProps = {
   product: ProductCardViewModel;
   viewMode?: "grid" | "list";
   imagePriority?: boolean;
+  /** Stagger delay for viewport entrance animation (ms). */
+  animationDelay?: number;
 };
 
 export function ProductCard({
   product,
   viewMode = "grid",
   imagePriority = false,
+  animationDelay = 0,
 }: ProductCardProps) {
   const isList = viewMode === "list";
 
   return (
-    <article
+    <AnimateOnView
+      as="article"
+      animation="fadeInUp"
+      delay={animationDelay}
+      duration={0.7}
       className={
         isList
           ? "flex flex-col gap-4 border border-[#efefef] p-4 sm:flex-row sm:items-center"
@@ -93,6 +101,6 @@ export function ProductCard({
           align={isList ? "start" : "center"}
         />
       </div>
-    </article>
+    </AnimateOnView>
   );
 }

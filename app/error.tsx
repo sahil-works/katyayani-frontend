@@ -25,7 +25,7 @@ export default function Error({
         </p>
         <button
           onClick={reset}
-          className="rounded-md bg-[#9ea600] px-6 py-3 text-white hover:bg-[#8a9200] transition-colors"
+          className="rounded-md bg-[#ea206d] px-6 py-3 text-white hover:bg-[#d01b60] transition-colors"
         >
           Try again
         </button>

@@ -155,9 +155,9 @@ function EmptyCartIllustration({ className }: { className?: string }) {
     >
       <path d="M28 88V42h8l10-18h28l10 18h12v46H28z" className="text-[#d8dcc4]" />
       <path d="M28 42h64M38 24h36" className="text-[#c5c9b0]" />
-      <circle cx="44" cy="96" r="3" className="text-[#9ea600]" fill="currentColor" stroke="none" />
-      <circle cx="76" cy="96" r="3" className="text-[#9ea600]" fill="currentColor" stroke="none" />
-      <path d="M52 56c0 8 4 14 8 14s8-6 8-14" className="text-[#9ea600]" strokeWidth="2" />
+      <circle cx="44" cy="96" r="3" className="text-[#ea206d]" fill="currentColor" stroke="none" />
+      <circle cx="76" cy="96" r="3" className="text-[#ea206d]" fill="currentColor" stroke="none" />
+      <path d="M52 56c0 8 4 14 8 14s8-6 8-14" className="text-[#ea206d]" strokeWidth="2" />
     </svg>
   );
 }
@@ -666,7 +666,7 @@ export function CartSidebar() {
 
         {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center px-8 pb-12 text-center">
-            <EmptyCartIllustration className="mb-8 h-28 w-28 text-[#9ea600]/35" />
+            <EmptyCartIllustration className="mb-8 h-28 w-28 text-[#ea206d]/35" />
             <h2 className="text-[20px] font-semibold text-[#2f2f2f]">
               Your cart is empty
             </h2>
@@ -676,7 +676,7 @@ export function CartSidebar() {
             <Link
               href="/collections"
               onClick={closeCart}
-              className="mt-8 inline-flex h-12 items-center justify-center bg-[#9ea600] px-10 text-[15px] font-semibold text-white transition-colors hover:bg-[#8b9200]"
+              className="mt-8 inline-flex h-12 items-center justify-center bg-[#ea206d] px-10 text-[15px] font-semibold text-white transition-colors hover:bg-[#d01b60]"
             >
               Continue shopping
             </Link>

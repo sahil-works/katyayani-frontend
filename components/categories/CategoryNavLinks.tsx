@@ -12,7 +12,7 @@ type CategoryNavLinksProps = {
 };
 
 export function CategoryNavLinks({
-  linkClassName = "transition-colors hover:text-[#c4ca38]",
+  linkClassName = "transition-colors hover:text-[#ea206d]",
   emptyClassName = "text-[16px] text-[#666]",
   limit,
 }: CategoryNavLinksProps) {
@@ -50,7 +50,7 @@ type CategoryMenuLinksProps = {
 };
 
 export function CategoryMenuLinks({
-  itemClassName = "group/link flex items-center gap-3 rounded-lg px-3 py-2.5 text-[16px] text-[#343434] transition-colors hover:bg-[#f7f8ec] hover:text-[#9ea600]",
+  itemClassName = "group/link flex items-center gap-3 rounded-lg px-3 py-2.5 text-[16px] text-[#343434] transition-colors hover:bg-[#fdf0f5] hover:text-[#ea206d]",
 }: CategoryMenuLinksProps) {
   const categoriesQuery = useQuery(categoriesQueryOptions());
   const categories = categoriesQuery.data ?? [];
@@ -77,7 +77,7 @@ export function CategoryMenuLinks({
         >
           <span
             aria-hidden="true"
-            className="h-2 w-2 rounded-full bg-[#9ea600]"
+            className="h-2 w-2 rounded-full bg-[#ea206d]"
           />
           <span className="relative after:absolute after:-bottom-0.5 after:left-0 after:h-[1px] after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 group-hover/link:after:scale-x-100">
             {category.title}

@@ -160,7 +160,7 @@ function CheckoutHeader() {
       <div className="mx-auto flex h-[74px] w-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className={`${dancingScript.className} text-[30px] font-bold leading-none tracking-[0.01em] text-[#9ea600]`}
+          className={`${dancingScript.className} text-[30px] font-bold leading-none tracking-[0.01em] text-[#ea206d]`}
         >
           Katyayani Designer Hub
         </Link>
@@ -725,11 +725,11 @@ export default function CheckoutPage() {
           ) : null}
 
           {authStatus === "initializing" ? (
-            <div className="mt-6 rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-4 text-[14px] text-[#555]">
+            <div className="mt-6 rounded-xl border border-[#f0d4e0] bg-[#fefafc] px-4 py-4 text-[14px] text-[#555]">
               Checking your session...
             </div>
           ) : !isAuthenticated ? (
-            <div className="mt-6 rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-4">
+            <div className="mt-6 rounded-xl border border-[#f0d4e0] bg-[#fefafc] px-4 py-4">
               <h2 className="text-[18px] font-semibold text-[#222]">
                 Sign in required
               </h2>
@@ -739,7 +739,7 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={openCheckoutLogin}
-                className="mt-4 rounded-full bg-[#9ea600] px-6 py-2.5 text-[14px] font-semibold text-white"
+                className="mt-4 rounded-full bg-[#ea206d] px-6 py-2.5 text-[14px] font-semibold text-white"
               >
                 Sign in
               </button>
@@ -782,7 +782,7 @@ export default function CheckoutPage() {
                 </h2>
 
                 {addressesLoading ? (
-                  <div className="mb-4 rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[14px] text-[#555]">
+                  <div className="mb-4 rounded-xl border border-[#f0d4e0] bg-[#fefafc] px-4 py-3 text-[14px] text-[#555]">
                     Loading saved addresses...
                   </div>
                 ) : savedAddresses.length > 0 ? (
@@ -794,7 +794,7 @@ export default function CheckoutPage() {
                           key={saved.id}
                           className={`flex cursor-pointer gap-3 rounded-xl border px-4 py-3 transition-colors ${
                             selected
-                              ? "border-[#9ea600] bg-[#f8f9f0]"
+                              ? "border-[#ea206d] bg-[#fdf0f5]"
                               : "border-[#dbdbdb] bg-white hover:border-[#c5c875]"
                           }`}
                         >
@@ -803,7 +803,7 @@ export default function CheckoutPage() {
                             name="checkout-address"
                             checked={selected}
                             onChange={() => selectSavedAddress(saved.id)}
-                            className="mt-1 size-4 shrink-0 accent-[#9ea600]"
+                            className="mt-1 size-4 shrink-0 accent-[#ea206d]"
                           />
                           <span className="min-w-0">
                             <span className="flex flex-wrap items-center gap-2">
@@ -828,7 +828,7 @@ export default function CheckoutPage() {
                       onClick={useNewAddress}
                       className={`w-full rounded-xl border px-4 py-3 text-left text-[14px] font-medium transition-colors ${
                         selectedAddressId === "new"
-                          ? "border-[#9ea600] bg-[#f8f9f0] text-[#4c5200]"
+                          ? "border-[#ea206d] bg-[#fdf0f5] text-[#9a1548]"
                           : "border-[#dbdbdb] bg-white text-[#444] hover:border-[#c5c875]"
                       }`}
                     >
@@ -838,7 +838,7 @@ export default function CheckoutPage() {
                 ) : null}
 
                 {selectedAddressId !== "new" && savedAddresses.length > 0 ? (
-                  <div className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] px-4 py-4">
+                  <div className="rounded-xl border border-[#eceee0] bg-[#fefafc] px-4 py-4">
                     <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-[#777]">
                       Delivering to
                     </p>
@@ -969,7 +969,7 @@ export default function CheckoutPage() {
                         type="checkbox"
                         checked={saveNewAddress}
                         onChange={(event) => setSaveNewAddress(event.target.checked)}
-                        className="size-4 rounded border-[#dbdbdb] accent-[#9ea600]"
+                        className="size-4 rounded border-[#dbdbdb] accent-[#ea206d]"
                       />
                       <span className="text-[14px] text-[#444]">
                         Save this address for future orders

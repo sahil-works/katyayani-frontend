@@ -18,8 +18,8 @@ export function ProductPriceDisplay({
 
   const mainClass =
     size === "detail"
-      ? "text-[22px] font-medium tracking-tight text-[#9ea600] sm:text-[24px]"
-      : "text-[20px] font-medium text-[#9ea600]";
+      ? "text-[22px] font-medium tracking-tight text-[#ea206d] sm:text-[24px]"
+      : "text-[20px] font-medium text-[#ea206d]";
 
   const strikeClass =
     size === "detail"

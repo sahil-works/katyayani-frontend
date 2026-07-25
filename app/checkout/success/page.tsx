@@ -30,7 +30,7 @@ function CheckoutSuccessHeader() {
       <div className="mx-auto flex h-[74px] w-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className={`${dancingScript.className} text-[30px] font-bold leading-none tracking-[0.01em] text-[#9ea600]`}
+          className={`${dancingScript.className} text-[30px] font-bold leading-none tracking-[0.01em] text-[#ea206d]`}
         >
           Katyayani Designer Hub
         </Link>
@@ -159,7 +159,7 @@ function CheckoutSuccessContent() {
   if (authStatus !== "initializing" && !isAuthenticated) {
     return (
       <Shell>
-        <section className="rounded-2xl border border-[#e3e5d8] bg-white px-6 py-8">
+        <section className="rounded-2xl border border-[#f0d4e0] bg-white px-6 py-8">
           <h1 className="text-[26px] font-semibold text-[#1f1f1f]">
             Sign in to view this order
           </h1>
@@ -168,7 +168,7 @@ function CheckoutSuccessContent() {
           </p>
           <Link
             href="/account/my-orders"
-            className="mt-6 inline-flex rounded-full bg-[#9ea600] px-5 py-2.5 text-[14px] font-semibold text-white"
+            className="mt-6 inline-flex rounded-full bg-[#ea206d] px-5 py-2.5 text-[14px] font-semibold text-white"
           >
             Go to my orders
           </Link>
@@ -180,8 +180,8 @@ function CheckoutSuccessContent() {
   if (authStatus === "initializing" || isLoading) {
     return (
       <Shell>
-        <section className="rounded-2xl border border-[#e3e5d8] bg-white px-6 py-10 text-center">
-          <div className="mx-auto size-12 animate-spin rounded-full border-4 border-[#e6e8d9] border-t-[#9ea600]" />
+        <section className="rounded-2xl border border-[#f0d4e0] bg-white px-6 py-10 text-center">
+          <div className="mx-auto size-12 animate-spin rounded-full border-4 border-[#f5d6e4] border-t-[#ea206d]" />
           <h1 className="mt-5 text-[26px] font-semibold text-[#1f1f1f]">
             Confirming your order
           </h1>
@@ -233,7 +233,7 @@ function CheckoutSuccessContent() {
           </div>
 
           {order ? (
-            <div className="border-t border-[#e6e8d9] px-6 py-6">
+            <div className="border-t border-[#f5d6e4] px-6 py-6">
               <ul className="divide-y divide-[#eceee0]">
                 {order.items.slice(0, 4).map((item) => (
                   <li
@@ -270,16 +270,16 @@ function CheckoutSuccessContent() {
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-3 border-t border-[#e6e8d9] px-6 py-6">
+          <div className="flex flex-wrap gap-3 border-t border-[#f5d6e4] px-6 py-6">
             <Link
               href="/account/my-orders"
-              className="inline-flex rounded-full bg-[#9ea600] px-6 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#8f9500]"
+              className="inline-flex rounded-full bg-[#ea206d] px-6 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#d01b60]"
             >
               View my orders
             </Link>
             <Link
               href="/"
-              className="inline-flex rounded-full border border-[#dadcc8] bg-white px-6 py-2.5 text-[14px] font-semibold text-[#333] transition-colors hover:bg-[#f8f9f0]"
+              className="inline-flex rounded-full border border-[#e8c8d6] bg-white px-6 py-2.5 text-[14px] font-semibold text-[#333] transition-colors hover:bg-[#fdf0f5]"
             >
               Continue shopping
             </Link>
@@ -304,14 +304,14 @@ function CheckoutSuccessContent() {
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/account/my-orders"
-              className="inline-flex rounded-full bg-[#9ea600] px-6 py-2.5 text-[14px] font-semibold text-white"
+              className="inline-flex rounded-full bg-[#ea206d] px-6 py-2.5 text-[14px] font-semibold text-white"
             >
               View my orders
             </Link>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex rounded-full border border-[#dadcc8] bg-white px-6 py-2.5 text-[14px] font-semibold text-[#333] hover:bg-[#f8f9f0]"
+              className="inline-flex rounded-full border border-[#e8c8d6] bg-white px-6 py-2.5 text-[14px] font-semibold text-[#333] hover:bg-[#fdf0f5]"
             >
               Refresh status
             </button>
@@ -348,7 +348,7 @@ function CheckoutSuccessContent() {
           </Link>
           <Link
             href="/collections"
-            className="inline-flex rounded-full border border-[#dadcc8] bg-white px-6 py-2.5 text-[14px] font-semibold text-[#333] hover:bg-[#f8f9f0]"
+            className="inline-flex rounded-full border border-[#e8c8d6] bg-white px-6 py-2.5 text-[14px] font-semibold text-[#333] hover:bg-[#fdf0f5]"
           >
             Continue shopping
           </Link>
@@ -363,8 +363,8 @@ export default function CheckoutSuccessPage() {
     <Suspense
       fallback={
         <Shell>
-          <section className="rounded-2xl border border-[#e3e5d8] bg-white px-6 py-10 text-center">
-            <div className="mx-auto size-12 animate-spin rounded-full border-4 border-[#e6e8d9] border-t-[#9ea600]" />
+          <section className="rounded-2xl border border-[#f0d4e0] bg-white px-6 py-10 text-center">
+            <div className="mx-auto size-12 animate-spin rounded-full border-4 border-[#f5d6e4] border-t-[#ea206d]" />
             <h1 className="mt-5 text-[26px] font-semibold text-[#1f1f1f]">
               Confirming your order
             </h1>

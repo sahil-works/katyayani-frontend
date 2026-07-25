@@ -11,6 +11,7 @@ import {
   type GetProductsParams,
 } from "../lib/api";
 import { buildProductListingHref } from "../lib/storefront";
+import AnimateOnView from "./AnimateOnView";
 import { ProductCard } from "./storefront/ProductCard";
 import {
   StorefrontEmptyState,
@@ -101,9 +102,11 @@ export default function NewArrivalsContent() {
           <span className="tracking-[0.03em] uppercase">{heading}</span>
         </div>
 
-        <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
-          {heading.toUpperCase()}
-        </h1>
+        <AnimateOnView animation="fadeInDown" duration={0.75}>
+          <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
+            {heading.toUpperCase()}
+          </h1>
+        </AnimateOnView>
 
         <section className="mt-16 grid gap-10 lg:grid-cols-[300px_1fr]">
           <aside className="sticky top-5 self-start rounded-xl border border-[#ececec] bg-[#fcfcfc] p-6 lg:p-7">
@@ -130,7 +133,7 @@ export default function NewArrivalsContent() {
                 <button
                   type="submit"
                   aria-label="Search catalog"
-                  className="grid w-11 place-items-center bg-[#9ea600] text-white"
+                  className="grid w-11 place-items-center bg-[#ea206d] text-white"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -169,7 +172,7 @@ export default function NewArrivalsContent() {
                       categoryId: event.target.value || undefined,
                     })
                   }
-                  className="h-11 w-full rounded-md border border-[#d9d9d9] bg-white px-3 text-[15px] outline-none focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/20"
+                  className="h-11 w-full rounded-md border border-[#d9d9d9] bg-white px-3 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/20"
                 >
                   <option value="">All categories</option>
                   {categoriesQuery.data?.map((category) => (
@@ -252,7 +255,7 @@ export default function NewArrivalsContent() {
               </div>
 
               <div className="flex flex-wrap items-center gap-7 text-[18px] text-[#5a5a5a]">
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <span>Source:</span>
                   <div className="relative">
                     <span className="inline-flex h-11 min-w-[170px] items-center rounded-md border border-[#d9d9d9] bg-white pl-4 pr-10 text-[16px] text-[#2f2f2f]">
@@ -260,7 +263,7 @@ export default function NewArrivalsContent() {
                     </span>
                     <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-[16px] w-[16px] -translate-y-1/2 text-[#747474]" />
                   </div>
-                </div>
+                </div> */}
                 <span>{pagination?.total ?? products.length} Products</span>
               </div>
             </div>
@@ -300,6 +303,7 @@ export default function NewArrivalsContent() {
                       product={product}
                       viewMode={viewMode}
                       imagePriority={index < 3}
+                      animationDelay={(index % 3) * 100}
                     />
                   ))}
                 </div>

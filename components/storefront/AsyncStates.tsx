@@ -32,7 +32,7 @@ export function StorefrontEmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-[#e6e8d9] bg-[#fbfcf8] px-6 py-10 text-center">
+    <div className="rounded-2xl border border-[#f5d6e4] bg-[#fefafc] px-6 py-10 text-center">
       <h2 className="text-[22px] font-semibold text-[#1f1f1f]">{title}</h2>
       <p className="mx-auto mt-2 max-w-md text-[15px] leading-relaxed text-[#666]">
         {description}

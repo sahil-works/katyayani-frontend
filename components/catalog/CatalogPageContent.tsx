@@ -82,7 +82,7 @@ export default function CatalogPageContent({ slug }: CatalogPageContentProps) {
           </div>
 
           <p
-            className={`${dancingScript.className} mt-8 text-[28px] leading-none text-[#9ea600] lg:text-[34px]`}
+            className={`${dancingScript.className} mt-8 text-[28px] leading-none text-[#ea206d] lg:text-[34px]`}
           >
             Curated Collection
           </p>
@@ -169,6 +169,7 @@ export default function CatalogPageContent({ slug }: CatalogPageContentProps) {
                   product={product}
                   viewMode={viewMode}
                   imagePriority={index < 3}
+                  animationDelay={(index % 3) * 100}
                 />
               ))}
             </div>

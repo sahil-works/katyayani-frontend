@@ -54,7 +54,7 @@ export default function ProductInfoAccordion({
           <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-4 text-[14px] font-medium uppercase tracking-[0.08em] text-[#111] [&::-webkit-details-marker]:hidden sm:py-5">
             <span className="flex items-center gap-3">
               <Icon
-                className={`h-4 w-4 shrink-0 ${isSidebar ? "text-[#666]" : "text-[#9ea600]"}`}
+                className={`h-4 w-4 shrink-0 ${isSidebar ? "text-[#666]" : "text-[#ea206d]"}`}
                 strokeWidth={1.45}
                 aria-hidden
               />

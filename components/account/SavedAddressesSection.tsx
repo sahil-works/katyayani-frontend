@@ -20,7 +20,7 @@ import {
 import { useAuth } from "../../providers/AuthProvider";
 
 const fieldClass =
-  "mt-1.5 h-11 w-full rounded-xl border border-[#dbddca] bg-white px-3.5 text-[15px] outline-none focus:border-[#9ea600] focus:ring-2 focus:ring-[#9ea600]/25";
+  "mt-1.5 h-11 w-full rounded-xl border border-[#f0d0de] bg-white px-3.5 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/25";
 
 function AddressForm({
   initial,
@@ -160,7 +160,7 @@ function AddressForm({
             type="checkbox"
             checked={values.isDefault}
             onChange={(event) => updateField("isDefault", event.target.checked)}
-            className="size-4 rounded border-[#dbddca] text-[#9ea600] focus:ring-[#9ea600]"
+            className="size-4 rounded border-[#f0d0de] text-[#ea206d] focus:ring-[#ea206d]"
           />
           <span className="text-[14px] text-[#444]">Set as default</span>
         </label>
@@ -172,7 +172,7 @@ function AddressForm({
         <button
           type="submit"
           disabled={busy}
-          className="cursor-pointer rounded-lg bg-[#9ea600] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#8f9500] disabled:cursor-not-allowed disabled:opacity-60"
+          className="cursor-pointer rounded-lg bg-[#ea206d] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#d01b60] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? "Saving..." : submitLabel}
         </button>
@@ -180,7 +180,7 @@ function AddressForm({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="cursor-pointer rounded-lg border border-[#dadcc8] px-4 py-2 text-[14px] font-medium text-[#333] transition-colors hover:bg-[#f2f3e9]"
+          className="cursor-pointer rounded-lg border border-[#e8c8d6] px-4 py-2 text-[14px] font-medium text-[#333] transition-colors hover:bg-[#fce8f0]"
         >
           Cancel
         </button>
@@ -295,7 +295,7 @@ export function SavedAddressesSection() {
   }
 
   return (
-    <div className="rounded-2xl border border-[#e6e8d9] bg-white p-6 sm:p-8">
+    <div className="rounded-2xl border border-[#f5d6e4] bg-white p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-[20px] font-semibold text-[#1f1f1f]">
@@ -309,7 +309,7 @@ export function SavedAddressesSection() {
           <button
             type="button"
             onClick={startAdd}
-            className="cursor-pointer rounded-xl border border-[#dadcc8] px-5 py-2.5 text-[15px] font-medium text-[#4c5200] transition-colors hover:bg-[#f8f9f0]"
+            className="cursor-pointer rounded-xl border border-[#e8c8d6] px-5 py-2.5 text-[15px] font-medium text-[#9a1548] transition-colors hover:bg-[#fdf0f5]"
           >
             Add address
           </button>
@@ -349,17 +349,17 @@ export function SavedAddressesSection() {
           {[0, 1].map((key) => (
             <div
               key={key}
-              className="h-24 animate-pulse rounded-xl border border-[#eceee0] bg-[#fbfcf8]"
+              className="h-24 animate-pulse rounded-xl border border-[#eceee0] bg-[#fefafc]"
             />
           ))}
         </div>
       ) : addresses.length === 0 && formMode === "none" ? (
-        <div className="mt-5 rounded-xl border border-dashed border-[#dadcc8] bg-[#fbfcf8] px-4 py-8 text-center">
+        <div className="mt-5 rounded-xl border border-dashed border-[#e8c8d6] bg-[#fefafc] px-4 py-8 text-center">
           <p className="text-[15px] text-[#555]">No saved addresses yet.</p>
           <button
             type="button"
             onClick={startAdd}
-            className="mt-4 cursor-pointer rounded-lg bg-[#9ea600] px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#8f9500]"
+            className="mt-4 cursor-pointer rounded-lg bg-[#ea206d] px-5 py-2 text-[14px] font-medium text-white transition-colors hover:bg-[#d01b60]"
           >
             Add your first address
           </button>
@@ -369,7 +369,7 @@ export function SavedAddressesSection() {
           {addresses.map((address) => (
             <article
               key={address.id}
-              className="rounded-xl border border-[#eceee0] bg-[#fbfcf8] p-4"
+              className="rounded-xl border border-[#eceee0] bg-[#fefafc] p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -400,7 +400,7 @@ export function SavedAddressesSection() {
                       type="button"
                       onClick={() => void handleSetDefault(address.id)}
                       disabled={busyId === address.id}
-                      className="cursor-pointer rounded-lg border border-[#dadcc8] px-3 py-1.5 text-[13px] font-medium text-[#4c5200] transition-colors hover:bg-[#f2f3e9] disabled:opacity-60"
+                      className="cursor-pointer rounded-lg border border-[#e8c8d6] px-3 py-1.5 text-[13px] font-medium text-[#9a1548] transition-colors hover:bg-[#fce8f0] disabled:opacity-60"
                     >
                       Make default
                     </button>
@@ -409,7 +409,7 @@ export function SavedAddressesSection() {
                     type="button"
                     onClick={() => startEdit(address)}
                     disabled={busyId === address.id}
-                    className="cursor-pointer rounded-lg border border-[#dadcc8] px-3 py-1.5 text-[13px] font-medium text-[#333] transition-colors hover:bg-[#f2f3e9] disabled:opacity-60"
+                    className="cursor-pointer rounded-lg border border-[#e8c8d6] px-3 py-1.5 text-[13px] font-medium text-[#333] transition-colors hover:bg-[#fce8f0] disabled:opacity-60"
                   >
                     Edit
                   </button>

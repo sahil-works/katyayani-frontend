@@ -51,10 +51,10 @@ export default function ProductHeroGallery({
               key={`${image.src}-${index}`}
               type="button"
               onClick={() => setActive(index)}
-              className={`relative h-22 w-16 shrink-0 overflow-hidden rounded-full border bg-[#f6f1e9] transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9ea600] sm:h-26 sm:w-18 lg:h-28 lg:w-full lg:rounded-[999px] ${
+              className={`relative h-22 w-16 shrink-0 overflow-hidden rounded-full border bg-[#f6f1e9] transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea206d] sm:h-26 sm:w-18 lg:h-28 lg:w-full lg:rounded-[999px] ${
                 active === index
                   ? "border-[#1f1a14] opacity-100"
-                  : "border-[#e5ded2] opacity-70 hover:border-[#9ea600] hover:opacity-100"
+                  : "border-[#e5ded2] opacity-70 hover:border-[#ea206d] hover:opacity-100"
               }`}
               aria-label={`Show product image ${index + 1} of ${safeImages.length}`}
               aria-pressed={active === index}
@@ -81,7 +81,7 @@ export default function ProductHeroGallery({
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
-            className="group absolute inset-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9ea600]"
+            className="group absolute inset-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea206d]"
             aria-label={`View ${productName} image ${active + 1} full screen`}
           >
             <StorefrontImage
@@ -103,7 +103,7 @@ export default function ProductHeroGallery({
               <button
                 type="button"
                 onClick={showPreviousImage}
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] backdrop-blur transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9ea600]"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] backdrop-blur transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea206d]"
                 aria-label="Previous product image"
               >
                 <ChevronLeft className="h-4.5 w-4.5" strokeWidth={1.7} aria-hidden />
@@ -111,7 +111,7 @@ export default function ProductHeroGallery({
               <button
                 type="button"
                 onClick={showNextImage}
-                className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] backdrop-blur transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9ea600]"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] backdrop-blur transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ea206d]"
                 aria-label="Next product image"
               >
                 <ChevronRight className="h-4.5 w-4.5" strokeWidth={1.7} aria-hidden />

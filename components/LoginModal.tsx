@@ -101,7 +101,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 const inputClassName =
-  "w-full rounded-xl border border-[#e3e5d8] bg-[#fafbf7] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#9ea600] focus:bg-white focus:ring-[3px] focus:ring-[#9ea600]/20";
+  "w-full rounded-xl border border-[#f0d4e0] bg-[#fefafc] px-4 py-3 text-[16px] text-[#222] outline-none focus:border-[#ea206d] focus:bg-white focus:ring-[3px] focus:ring-[#ea206d]/20";
 
 const inputErrorClassName =
   "border-[#e8b4b4] focus:border-[#c14747] focus:ring-[#c14747]/15";
@@ -376,7 +376,7 @@ export function LoginModal() {
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={descriptionId}
-          className={`relative w-full max-w-[440px] origin-center rounded-[1.35rem] border border-[#eceee4] bg-white shadow-[0_25px_80px_-12px_rgba(0,0,0,0.25),0_0_0_1px_rgba(158,166,0,0.06)] transition-transform duration-300 ease-out ${
+          className={`relative w-full max-w-[440px] origin-center rounded-[1.35rem] border border-[#f5e6ed] bg-white shadow-[0_25px_80px_-12px_rgba(0,0,0,0.25),0_0_0_1px_rgba(234,32,109,0.06)] transition-transform duration-300 ease-out ${
             open ? "scale-100" : "scale-[0.96]"
           }`}
           onClick={(e) => e.stopPropagation()}
@@ -397,7 +397,7 @@ export function LoginModal() {
 
             <div className="pr-8">
               <p
-                className={`${dancingAccent.className} text-[2rem] leading-tight text-[#9ea600] sm:text-[2.25rem]`}
+                className={`${dancingAccent.className} text-[2rem] leading-tight text-[#ea206d] sm:text-[2.25rem]`}
               >
                 Welcome
               </p>
@@ -439,8 +439,8 @@ export function LoginModal() {
                   >
                     Mobile number
                   </label>
-                  <div className="flex overflow-hidden rounded-xl border border-[#e3e5d8] bg-[#fafbf7] focus-within:border-[#9ea600] focus-within:bg-white focus-within:ring-[3px] focus-within:ring-[#9ea600]/20">
-                    <span className="flex items-center border-r border-[#e3e5d8] px-4 text-[16px] text-[#666]">
+                  <div className="flex overflow-hidden rounded-xl border border-[#f0d4e0] bg-[#fefafc] focus-within:border-[#ea206d] focus-within:bg-white focus-within:ring-[3px] focus-within:ring-[#ea206d]/20">
+                    <span className="flex items-center border-r border-[#f0d4e0] px-4 text-[16px] text-[#666]">
                       +91
                     </span>
                     <input
@@ -573,7 +573,7 @@ export function LoginModal() {
               <button
                 type="submit"
                 disabled={isSubmitting || status === "initializing"}
-                className="mt-2 w-full cursor-pointer rounded-xl bg-[#9ea600] py-3.5 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(158,166,0,0.35)] transition-[transform,box-shadow] hover:bg-[#8f9500] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full cursor-pointer rounded-xl bg-[#ea206d] py-3.5 text-[17px] font-semibold text-white shadow-[0_4px_14px_rgba(234,32,109,0.35)] transition-[transform,box-shadow] hover:bg-[#d01b60] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitLabel}
               </button>
