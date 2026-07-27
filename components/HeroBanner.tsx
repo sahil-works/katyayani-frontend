@@ -1,6 +1,6 @@
 import AnimateOnView from "./AnimateOnView";
 
-const homeBannerImage = "/assets/images/new-bnr-two.png";
+const homeBannerImage = "/assets/images/home-hero-banner.png";
 
 export default function HeroBanner() {
   return (
@@ -18,7 +18,7 @@ export default function HeroBanner() {
         alt="Expect the best from Katyayani Designer Hub — Discover all the items with affordable prices, and take advantage of our products."
         className="block h-auto w-full"
         width={1024}
-        height={346}
+        height={320}
       />
     </AnimateOnView>
   );
