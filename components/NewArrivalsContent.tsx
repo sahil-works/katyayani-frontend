@@ -10,7 +10,7 @@ import {
   productsQueryOptions,
   type GetProductsParams,
 } from "../lib/api";
-import { buildProductListingHref } from "../lib/storefront";
+import { buildProductListingHref, formatTagLabel } from "../lib/storefront";
 import AnimateOnView from "./AnimateOnView";
 import { ProductCard } from "./storefront/ProductCard";
 import {
@@ -59,7 +59,8 @@ export default function NewArrivalsContent() {
   const selectedCategory = categoriesQuery.data?.find(
     (category) => category.id === categoryId,
   );
-  const heading = selectedCategory?.title ?? tag ?? q ?? "New Arrivals";
+  const tagLabel = tag ? formatTagLabel(tag) : undefined;
+  const heading = selectedCategory?.title ?? tagLabel ?? q ?? "New Arrivals";
   const products = productsQuery.data?.items ?? [];
   const pagination = productsQuery.data?.pagination;
 
@@ -120,7 +121,11 @@ export default function NewArrivalsContent() {
         <div className="mx-auto max-w-[1320px] px-6 py-10 sm:py-12 lg:px-10 lg:py-14">
           <AnimateOnView animation="fadeInDown" duration={0.75}>
             <p className="text-center text-[12px] font-semibold uppercase tracking-[0.22em] text-[#ea206d]">
-              {selectedCategory ? "Shop by category" : "Browse collection"}
+              {selectedCategory
+                ? "Shop by category"
+                : tagLabel
+                  ? "Shop by collection"
+                  : "Browse collection"}
             </p>
             <h1
               id="catalog-heading"
@@ -129,7 +134,7 @@ export default function NewArrivalsContent() {
               {heading.toUpperCase()}
             </h1>
             {selectedCategory?.description ? (
-              <p className="mx-auto mt-4 max-w-[640px] text-center text-[16px] leading-[1.5] text-[#6b5560]">
+              <p className="mx-auto mt-4 max-w-[640px] text-center text-[16px] leading-normal text-[#6b5560]">
                 {selectedCategory.description}
               </p>
             ) : null}

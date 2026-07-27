@@ -29,3 +29,21 @@ export function buildProductListingHref(
   const search = searchParams.toString();
   return search ? `${pathname}?${search}` : pathname;
 }
+
+/** Product tags are stored lowercase, so menu links use these keys as-is. */
+const TAG_LABELS: Record<string, string> = {
+  wedding: "Wedding Wear",
+  summer: "Summer Wear",
+  latest: "Latest Collection",
+  featured: "Best Collection",
+};
+
+export function formatTagLabel(tag: string) {
+  const normalized = tag.trim().toLowerCase();
+  if (!normalized) return "";
+
+  return (
+    TAG_LABELS[normalized] ??
+    normalized.replace(/[-_]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+  );
+}

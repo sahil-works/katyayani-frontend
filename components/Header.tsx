@@ -8,6 +8,7 @@ import { useCartSidebar } from "./CartSidebar";
 import { useLoginModal } from "./LoginModal";
 import { useSearchSidebar } from "./SearchSidebar";
 import { useAuth } from "../providers/AuthProvider";
+import { buildProductListingHref } from "../lib/storefront";
 import { CategoryMenuLinks } from "./categories/CategoryNavLinks";
 
 const dancingScript = Dancing_Script({
@@ -18,7 +19,8 @@ const dancingScript = Dancing_Script({
 const navItems = [
   { label: "HOME", href: "/" },
   { label: "CATEGORY", href: "/" },
-  { label: "NEW ARRIVALS", href: "/new-arrivals" },
+  { label: "WEDDING WEAR", href: buildProductListingHref({ tag: "wedding" }) },
+  { label: "SUMMER WEAR", href: buildProductListingHref({ tag: "summer" }) },
   { label: "ALL COLLECTIONS", href: "/collections" },
   { label: "CONTACT US", href: "/contact-us" },
 ];
