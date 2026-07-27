@@ -53,6 +53,8 @@ export type ProductApiResponse = {
   variants?: ProductVariantApiResponse[] | null;
   category?: CategoryApiResponse | null;
   categories?: CategoryApiResponse[] | null;
+  categoryId?: string | null;
+  categoryIds?: string[] | null;
   tags?: string[] | null;
   isActive?: boolean | null;
   inStock?: boolean | null;

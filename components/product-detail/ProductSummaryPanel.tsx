@@ -52,13 +52,24 @@ export default function ProductSummaryPanel({
         ) : null}
 
         <div>
-          {product.category ? (
-            <Link
-              href={buildProductListingHref({ categoryId: product.category.id })}
-              className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#888] transition-colors hover:text-[#111]"
-            >
-              {product.category.title}
-            </Link>
+          {product.categories.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              {product.categories.map((category, index) => (
+                <span key={category.id} className="flex items-center gap-2">
+                  {index > 0 ? (
+                    <span aria-hidden="true" className="text-[11px] text-[#c9c9c9]">
+                      •
+                    </span>
+                  ) : null}
+                  <Link
+                    href={buildProductListingHref({ categoryId: category.id })}
+                    className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#888] transition-colors hover:text-[#111]"
+                  >
+                    {category.title}
+                  </Link>
+                </span>
+              ))}
+            </div>
           ) : null}
           <h1 className="mt-2 text-[26px] font-normal leading-[1.2] tracking-tight text-[#111] sm:text-[30px]">
             {product.title}

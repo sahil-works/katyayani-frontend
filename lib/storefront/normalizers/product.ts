@@ -310,9 +310,22 @@ function deriveProductLevelPrice(
   });
 }
 
-function resolveProductCategory(product: ProductApiResponse) {
-  if (product.category) return normalizeCategory(product.category);
-  return product.categories?.[0] ? normalizeCategory(product.categories[0]) : undefined;
+/** A product can belong to several categories; older payloads only send one. */
+function resolveProductCategories(product: ProductApiResponse) {
+  const source = product.categories?.length
+    ? product.categories
+    : product.category
+      ? [product.category]
+      : [];
+
+  const seen = new Set<string>();
+  return source
+    .filter((category) => {
+      if (!category?.id || seen.has(category.id)) return false;
+      seen.add(category.id);
+      return true;
+    })
+    .map(normalizeCategory);
 }
 
 export function normalizeProductCard(
@@ -323,6 +336,7 @@ export function normalizeProductCard(
   const price = deriveProductLevelPrice(product, variants, primaryVariant);
   const inStock = productIsInStock(product, variants);
   const [image] = normalizeImages(product);
+  const categories = resolveProductCategories(product);
 
   return {
     id: product.id,
@@ -334,7 +348,8 @@ export function normalizeProductCard(
     inStock,
     stockLabel: getStockLabel(inStock),
     isActive: product.isActive !== false && product.available !== false,
-    category: resolveProductCategory(product),
+    category: categories[0],
+    categories,
     primaryVariant,
     hasMultipleVariants: variants.filter((variant) => variant.isActive).length > 1,
     seo: resolveSeoFallback({

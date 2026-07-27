@@ -56,7 +56,9 @@ export type ProductCardViewModel = {
   inStock: boolean;
   stockLabel: string;
   isActive: boolean;
+  /** Primary category, mirrors `categories[0]`. */
   category?: CategoryViewModel;
+  categories: CategoryViewModel[];
   seo: SeoViewModel;
   /** Default variant used for one-click add-to-cart from listing cards. */
   primaryVariant?: ProductVariantViewModel;
