@@ -93,22 +93,52 @@ export default function NewArrivalsContent() {
 
   return (
     <main className="min-h-[calc(100vh-96px)] bg-white">
-      <div className="mx-auto max-w-[1320px] px-6 pt-5 pb-18 lg:px-10">
+      <div className="mx-auto max-w-[1320px] px-6 pt-5 lg:px-10">
         <div className="text-[14px] text-[#5c5c5c]">
           <Link href="/" className="hover:text-black">
             Home
           </Link>
           <span className="mx-2 text-[#9c9c9c]">/</span>
-          <span className="tracking-[0.03em] uppercase">{heading}</span>
+          {categoryId && selectedCategory ? (
+            <>
+              <Link href="/new-arrivals" className="hover:text-black">
+                New Arrivals
+              </Link>
+              <span className="mx-2 text-[#9c9c9c]">/</span>
+              <span className="tracking-[0.03em] uppercase">{selectedCategory.title}</span>
+            </>
+          ) : (
+            <span className="tracking-[0.03em] uppercase">{heading}</span>
+          )}
         </div>
+      </div>
 
-        <AnimateOnView animation="fadeInDown" duration={0.75}>
-          <h1 className="mt-14 text-center text-[38px] leading-none font-medium tracking-[0.02em] text-[#222]">
-            {heading.toUpperCase()}
-          </h1>
-        </AnimateOnView>
+      <section
+        className="mt-6 w-full border-y border-[#f3d6e3] bg-[#fdf2f7]"
+        aria-labelledby="catalog-heading"
+      >
+        <div className="mx-auto max-w-[1320px] px-6 py-10 sm:py-12 lg:px-10 lg:py-14">
+          <AnimateOnView animation="fadeInDown" duration={0.75}>
+            <p className="text-center text-[12px] font-semibold uppercase tracking-[0.22em] text-[#ea206d]">
+              {selectedCategory ? "Shop by category" : "Browse collection"}
+            </p>
+            <h1
+              id="catalog-heading"
+              className="mt-3 text-center text-[34px] leading-none font-medium tracking-[0.02em] text-[#222] sm:text-[38px]"
+            >
+              {heading.toUpperCase()}
+            </h1>
+            {selectedCategory?.description ? (
+              <p className="mx-auto mt-4 max-w-[640px] text-center text-[16px] leading-[1.5] text-[#6b5560]">
+                {selectedCategory.description}
+              </p>
+            ) : null}
+          </AnimateOnView>
+        </div>
+      </section>
 
-        <section className="mt-16 grid gap-10 lg:grid-cols-[300px_1fr]">
+      <div className="mx-auto max-w-[1320px] px-6 pt-12 pb-18 lg:px-10">
+        <section className="grid gap-10 lg:grid-cols-[300px_1fr]">
           <aside className="sticky top-5 self-start rounded-xl border border-[#ececec] bg-[#fcfcfc] p-6 lg:p-7">
             <h2 className="text-[24px] leading-none font-medium text-[#2d2d2d]">
               Filter
