@@ -58,6 +58,9 @@ export type ProductCardViewModel = {
   isActive: boolean;
   category?: CategoryViewModel;
   seo: SeoViewModel;
+  /** Default variant used for one-click add-to-cart from listing cards. */
+  primaryVariant?: ProductVariantViewModel;
+  hasMultipleVariants: boolean;
 };
 
 export type ProductDetailViewModel = ProductCardViewModel & {

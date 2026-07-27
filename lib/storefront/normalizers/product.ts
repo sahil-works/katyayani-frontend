@@ -335,6 +335,8 @@ export function normalizeProductCard(
     stockLabel: getStockLabel(inStock),
     isActive: product.isActive !== false && product.available !== false,
     category: resolveProductCategory(product),
+    primaryVariant,
+    hasMultipleVariants: variants.filter((variant) => variant.isActive).length > 1,
     seo: resolveSeoFallback({
       title: product.seo?.metaTitle,
       description:

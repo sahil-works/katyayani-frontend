@@ -1,5 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { ShoppingBag } from "lucide-react";
 import type { ProductCardViewModel } from "../../lib/storefront/types/viewModels";
+import { useCartSidebar } from "../CartSidebar";
 import AnimateOnView from "../AnimateOnView";
 import { ProductPriceDisplay } from "./ProductPriceDisplay";
 import { StorefrontImage } from "./StorefrontImage";
@@ -19,6 +24,44 @@ export function ProductCard({
   animationDelay = 0,
 }: ProductCardProps) {
   const isList = viewMode === "list";
+  const { addLine, openCart, isLoading: cartIsLoading } = useCartSidebar();
+  const [isAdding, setIsAdding] = useState(false);
+
+  const variant = product.primaryVariant;
+  const canAddToCart =
+    product.isActive &&
+    product.inStock &&
+    Boolean(variant?.id) &&
+    Boolean(variant?.isActive) &&
+    Boolean(variant?.inStock) &&
+    !cartIsLoading &&
+    !isAdding;
+
+  async function handleAddToCart() {
+    if (!variant || !canAddToCart) return;
+
+    setIsAdding(true);
+    try {
+      await addLine({
+        productId: product.id,
+        variantId: variant.id,
+        quantity: 1,
+        productTitle: product.title,
+        slug: product.slug,
+        category: product.category?.title,
+        variantTitle: variant.title,
+        image: variant.images[0] ?? product.image,
+        effectivePrice: variant.price.effectivePrice,
+        availableQuantity: variant.stockQuantity,
+        inStock: product.inStock,
+        available: variant.isActive,
+        stockLabel: product.stockLabel,
+      });
+      openCart();
+    } finally {
+      setIsAdding(false);
+    }
+  }
 
   return (
     <AnimateOnView
@@ -95,11 +138,50 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className={`mt-2 ${isList ? "sm:text-left" : ""}`}>
+      <div
+        className={`mt-2 flex flex-col gap-3 ${
+          isList ? "sm:ml-auto sm:items-end sm:text-left" : "items-center"
+        }`}
+      >
         <ProductPriceDisplay
           price={product.price}
           align={isList ? "start" : "center"}
         />
+
+        {canAddToCart ? (
+          <button
+            type="button"
+            onClick={() => void handleAddToCart()}
+            disabled={!canAddToCart}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[5px] bg-[#111] px-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#333] disabled:cursor-not-allowed disabled:bg-[#c9c0b0] ${
+              isList ? "w-full sm:w-auto" : "w-full max-w-[220px]"
+            }`}
+            aria-label={`Add ${product.title} to cart`}
+          >
+            <ShoppingBag className="size-4" aria-hidden />
+            {isAdding ? "Adding..." : "Add to cart"}
+          </button>
+        ) : product.inStock ? (
+          <Link
+            href={product.href}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[5px] border border-[#111] bg-white px-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#111] transition-colors hover:bg-[#111] hover:text-white ${
+              isList ? "w-full sm:w-auto" : "w-full max-w-[220px]"
+            }`}
+          >
+            {product.hasMultipleVariants ? "View options" : "View product"}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className={`inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[5px] bg-[#e8e8e8] px-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#666] ${
+              isList ? "w-full sm:w-auto" : "w-full max-w-[220px]"
+            }`}
+          >
+            <ShoppingBag className="size-4" aria-hidden />
+            Sold out
+          </button>
+        )}
       </div>
     </AnimateOnView>
   );
