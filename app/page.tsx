@@ -78,8 +78,8 @@ export default function Home() {
             className="relative z-10 max-w-[850px]"
           >
             <h2 className="text-[28px] leading-[1.28] font-semibold sm:text-[42px]">
-              Shop from Anywhere, Anytime! Enjoy Live Video Shopping from 11 AM
-              - 7 PM
+              Join Us on Our Instagram and YouTube Handle for More Frequent
+              Updates
             </h2>
             <p className="mt-6 text-[16px] leading-none text-white/95 sm:text-[21px]">
               Stylists On Call (English & Hindi)
