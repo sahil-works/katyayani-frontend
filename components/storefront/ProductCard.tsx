@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
 import type { ProductCardViewModel } from "../../lib/storefront/types/viewModels";
 import { useCartSidebar } from "../CartSidebar";
 import AnimateOnView from "../AnimateOnView";
@@ -24,6 +23,9 @@ export function ProductCard({
   animationDelay = 0,
 }: ProductCardProps) {
   const isList = viewMode === "list";
+  const actionClass = `inline-flex h-12 items-center justify-center rounded-[6px] border px-5 text-[15px] leading-none transition-colors ${
+    isList ? "w-full sm:w-auto sm:min-w-[220px]" : "w-full"
+  }`;
   const { addLine, openCart, isLoading: cartIsLoading } = useCartSidebar();
   const [isAdding, setIsAdding] = useState(false);
 
@@ -112,7 +114,7 @@ export function ProductCard({
         <div className={isList ? "min-w-0 sm:text-left" : ""}>
           {product.category ? (
             <p
-              className={`mt-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[#8a8a8a] ${
+              className={`mt-3 text-[13px] font-bold uppercase tracking-widest text-[#4a4a4a] ${
                 isList ? "text-left" : "text-center"
               }`}
             >
@@ -153,20 +155,15 @@ export function ProductCard({
             type="button"
             onClick={() => void handleAddToCart()}
             disabled={!canAddToCart}
-            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[5px] bg-[#111] px-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#333] disabled:cursor-not-allowed disabled:bg-[#c9c0b0] ${
-              isList ? "w-full sm:w-auto" : "w-full max-w-[220px]"
-            }`}
+            className={`${actionClass} border-[#ea206d] bg-white text-[#ea206d] hover:bg-[#ea206d] hover:text-white disabled:cursor-not-allowed disabled:border-[#e8d5dd] disabled:bg-white disabled:text-[#c9a9b7]`}
             aria-label={`Add ${product.title} to cart`}
           >
-            <ShoppingBag className="size-4" aria-hidden />
             {isAdding ? "Adding..." : "Add to cart"}
           </button>
         ) : product.inStock ? (
           <Link
             href={product.href}
-            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[5px] border border-[#111] bg-white px-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#111] transition-colors hover:bg-[#111] hover:text-white ${
-              isList ? "w-full sm:w-auto" : "w-full max-w-[220px]"
-            }`}
+            className={`${actionClass} border-[#ea206d] bg-white text-[#ea206d] hover:bg-[#ea206d] hover:text-white`}
           >
             {product.hasMultipleVariants ? "View options" : "View product"}
           </Link>
@@ -174,11 +171,8 @@ export function ProductCard({
           <button
             type="button"
             disabled
-            className={`inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[5px] bg-[#e8e8e8] px-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#666] ${
-              isList ? "w-full sm:w-auto" : "w-full max-w-[220px]"
-            }`}
+            className={`${actionClass} cursor-not-allowed border-[#e4e4e4] bg-[#fafafa] text-[#9a9a9a]`}
           >
-            <ShoppingBag className="size-4" aria-hidden />
             Sold out
           </button>
         )}
