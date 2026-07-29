@@ -1,7 +1,8 @@
 "use client";
 
 const WHATSAPP_URL = "https://wa.me/919041835216";
-const INSTAGRAM_URL = "https://www.instagram.com/katyayanidesignerhub/";
+const INSTAGRAM_URL =
+  "https://www.instagram.com/katyayani_designer_hub/?hl=en";
 
 function WhatsAppIcon() {
   return (
