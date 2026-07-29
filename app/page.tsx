@@ -81,9 +81,6 @@ export default function Home() {
               Join Us on Our Instagram and YouTube Handle for More Frequent
               Updates
             </h2>
-            <p className="mt-6 text-[16px] leading-none text-white/95 sm:text-[21px]">
-              Stylists On Call (English & Hindi)
-            </p>
             <button
               type="button"
               className="mt-8 min-w-[118px] rounded-[5px] bg-[#ea206d] px-6 py-3 text-[20px] font-medium text-white"
