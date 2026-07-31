@@ -58,11 +58,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # NEXT_PUBLIC_* values are baked in at build time, so the image is
+      # environment-specific and the tag must carry the environment. Without the
+      # suffix, dev and main sitting on the same commit produce the same tag and
+      # the later push wins for both environments.
       - name: Export image reference
         id: image
         run: |
           image_name="${REGISTRY}/${IMAGE_NAME}"
-          echo "image=${image_name,,}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image=${image_name,,}:sha-${GITHUB_SHA}-staging" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -71,7 +75,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}-staging
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-staging
           build-args: |
             NEXT_PUBLIC_APP_URL=${{ steps.build_args.outputs.app_url }}
