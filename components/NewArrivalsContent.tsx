@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { LayoutGrid, List, Search } from "lucide-react";
+import { ChevronDown, LayoutGrid, List, Search } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import {
   categoriesQueryOptions,
@@ -36,6 +36,7 @@ export default function NewArrivalsContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const q = cleanParam(searchParams.get("q"));
   const categoryId = cleanParam(searchParams.get("categoryId"));
@@ -142,132 +143,156 @@ export default function NewArrivalsContent() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1320px] px-6 pt-12 pb-18 lg:px-10">
-        <section className="grid gap-10 lg:grid-cols-[300px_1fr]">
-          <aside className="sticky top-5 self-start rounded-xl border border-[#ececec] bg-[#fcfcfc] p-6 lg:p-7">
-            <h2 className="text-[24px] leading-none font-medium text-[#2d2d2d]">
-              Filter
-            </h2>
-
-            <form onSubmit={handleSearchSubmit} className="mt-7">
-              <label
-                htmlFor="catalog-q"
-                className="mb-2 block text-[14px] font-medium text-[#555]"
-              >
-                Search by name or SKU
-              </label>
-              <div className="flex overflow-hidden rounded-lg border border-[#dedede] bg-white">
-                <input
-                  id="catalog-q"
-                  key={`q-${q ?? ""}`}
-                  name="q"
-                  defaultValue={q ?? ""}
-                  placeholder="Search name or SKU..."
-                  className="min-w-0 flex-1 px-3 py-2.5 text-[15px] outline-none"
-                />
-                <button
-                  type="submit"
-                  aria-label="Search catalog"
-                  className="grid w-11 place-items-center bg-[#ea206d] text-white"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
-              </div>
-            </form>
-
-            <div className="mt-7 border-t border-[#ececec] pt-6">
-              <label
-                htmlFor="catalog-category"
-                className="mb-2 block text-[18px] leading-none font-medium text-[#242424]"
-              >
-                Category
-              </label>
-              {categoriesQuery.isLoading ? (
-                <StorefrontSkeleton rows={3} label="Loading categories" />
-              ) : categoriesQuery.isError ? (
-                <StorefrontErrorState
-                  error={categoriesQuery.error}
-                  title="Could not load categories"
-                  action={
-                    <button
-                      type="button"
-                      onClick={() => categoriesQuery.refetch()}
-                      className="text-[14px] font-semibold text-[#8a2f2f] underline"
-                    >
-                      Retry
-                    </button>
-                  }
-                />
-              ) : (
-                <select
-                  id="catalog-category"
-                  value={categoryId ?? ""}
-                  onChange={(event) =>
-                    updateFilters({
-                      categoryId: event.target.value || undefined,
-                    })
-                  }
-                  className="h-11 w-full rounded-md border border-[#d9d9d9] bg-white px-3 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/20"
-                >
-                  <option value="">All categories</option>
-                  {categoriesQuery.data?.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.title}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <form
-              onSubmit={handleTagSubmit}
-              className="mt-7 border-t border-[#ececec] pt-6"
-            >
-              <label
-                htmlFor="catalog-tag"
-                className="mb-2 block text-[18px] leading-none font-medium text-[#242424]"
-              >
-                Tag
-              </label>
-              <div className="flex overflow-hidden rounded-md border border-[#d9d9d9] bg-white">
-                <input
-                  id="catalog-tag"
-                  key={`tag-${tag ?? ""}`}
-                  name="tag"
-                  defaultValue={tag ?? ""}
-                  placeholder="e.g. new-arrivals"
-                  className="h-11 min-w-0 flex-1 px-3 text-[15px] outline-none"
-                />
-                <button
-                  type="submit"
-                  className="bg-[#2f2f2f] px-3 text-[13px] font-semibold text-white"
-                >
-                  Apply
-                </button>
-              </div>
-            </form>
-
-            {(q || categoryId || tag) ? (
+      <div className="mx-auto max-w-[1320px] px-4 pt-8 pb-16 sm:px-6 sm:pt-12 lg:px-10">
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[300px_minmax(0,1fr)]">
+          <aside className="relative z-10 w-full min-w-0 self-start rounded-xl border border-[#ececec] bg-[#fcfcfc] lg:sticky lg:top-36 lg:z-10 lg:p-7">
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5 lg:px-0 lg:py-0">
+              <h2 className="text-[20px] leading-none font-medium text-[#2d2d2d] sm:text-[24px]">
+                Filter
+                {(q || categoryId || tag) ? (
+                  <span className="ml-2 align-middle text-[12px] font-semibold tracking-wide text-[#ea206d] uppercase">
+                    Active
+                  </span>
+                ) : null}
+              </h2>
               <button
                 type="button"
-                onClick={() => {
-                  router.replace(pathname, { scroll: false });
-                }}
-                className="mt-6 text-[14px] font-medium text-[#6f7600] underline underline-offset-2"
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-3 text-[13px] font-medium text-[#444] lg:hidden"
+                aria-expanded={filtersOpen}
+                aria-controls="catalog-filters"
+                onClick={() => setFiltersOpen((prev) => !prev)}
               >
-                Clear filters
+                {filtersOpen ? "Hide" : "Show"}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${filtersOpen ? "rotate-180" : ""}`}
+                />
               </button>
-            ) : null}
+            </div>
+
+            <div
+              id="catalog-filters"
+              className={`${filtersOpen ? "block" : "hidden"} border-t border-[#ececec] px-4 pt-5 pb-5 sm:px-5 lg:block lg:border-t-0 lg:px-0 lg:pt-7 lg:pb-0`}
+            >
+              <form onSubmit={handleSearchSubmit}>
+                <label
+                  htmlFor="catalog-q"
+                  className="mb-2 block text-[14px] font-medium text-[#555]"
+                >
+                  Search by name or SKU
+                </label>
+                <div className="flex overflow-hidden rounded-lg border border-[#dedede] bg-white">
+                  <input
+                    id="catalog-q"
+                    key={`q-${q ?? ""}`}
+                    name="q"
+                    defaultValue={q ?? ""}
+                    placeholder="Search name or SKU..."
+                    className="min-w-0 flex-1 px-3 py-2.5 text-[15px] outline-none"
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Search catalog"
+                    className="grid w-11 shrink-0 place-items-center bg-[#ea206d] text-white"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-7 border-t border-[#ececec] pt-6">
+                <label
+                  htmlFor="catalog-category"
+                  className="mb-2 block text-[18px] leading-none font-medium text-[#242424]"
+                >
+                  Category
+                </label>
+                {categoriesQuery.isLoading ? (
+                  <StorefrontSkeleton rows={3} label="Loading categories" />
+                ) : categoriesQuery.isError ? (
+                  <StorefrontErrorState
+                    error={categoriesQuery.error}
+                    title="Could not load categories"
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => categoriesQuery.refetch()}
+                        className="text-[14px] font-semibold text-[#8a2f2f] underline"
+                      >
+                        Retry
+                      </button>
+                    }
+                  />
+                ) : (
+                  <select
+                    id="catalog-category"
+                    value={categoryId ?? ""}
+                    onChange={(event) =>
+                      updateFilters({
+                        categoryId: event.target.value || undefined,
+                      })
+                    }
+                    className="h-11 w-full rounded-md border border-[#d9d9d9] bg-white px-3 text-[15px] outline-none focus:border-[#ea206d] focus:ring-2 focus:ring-[#ea206d]/20"
+                  >
+                    <option value="">All categories</option>
+                    {categoriesQuery.data?.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <form
+                onSubmit={handleTagSubmit}
+                className="mt-7 border-t border-[#ececec] pt-6"
+              >
+                <label
+                  htmlFor="catalog-tag"
+                  className="mb-2 block text-[18px] leading-none font-medium text-[#242424]"
+                >
+                  Tag
+                </label>
+                <div className="flex overflow-hidden rounded-md border border-[#d9d9d9] bg-white">
+                  <input
+                    id="catalog-tag"
+                    key={`tag-${tag ?? ""}`}
+                    name="tag"
+                    defaultValue={tag ?? ""}
+                    placeholder="e.g. new-arrivals"
+                    className="h-11 min-w-0 flex-1 px-3 text-[15px] outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 bg-[#2f2f2f] px-3 text-[13px] font-semibold text-white"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </form>
+
+              {(q || categoryId || tag) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.replace(pathname, { scroll: false });
+                  }}
+                  className="mt-6 text-[14px] font-medium text-[#6f7600] underline underline-offset-2"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
           </aside>
 
-          <div>
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div className="relative z-0 min-w-0">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8 sm:gap-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setViewMode("grid")}
                   aria-label="Grid view"
-                  className={`inline-flex h-[34px] w-[34px] items-center justify-center border transition-colors ${
+                  className={`inline-flex h-10 w-10 items-center justify-center border transition-colors sm:h-[34px] sm:w-[34px] ${
                     viewMode === "grid"
                       ? "border-[#d8d8d8] bg-[#f3f3f3] text-[#222]"
                       : "border-[#ebebeb] bg-transparent text-[#8b8b8b]"
@@ -279,7 +304,7 @@ export default function NewArrivalsContent() {
                   type="button"
                   onClick={() => setViewMode("list")}
                   aria-label="List view"
-                  className={`inline-flex h-[34px] w-[34px] items-center justify-center border transition-colors ${
+                  className={`inline-flex h-10 w-10 items-center justify-center border transition-colors sm:h-[34px] sm:w-[34px] ${
                     viewMode === "list"
                       ? "border-[#d8d8d8] bg-[#f3f3f3] text-[#222]"
                       : "border-[#ebebeb] bg-transparent text-[#8b8b8b]"
@@ -289,7 +314,7 @@ export default function NewArrivalsContent() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-7 text-[18px] text-[#5a5a5a]">
+              <div className="flex flex-wrap items-center gap-4 text-[15px] text-[#5a5a5a] sm:gap-7 sm:text-[18px]">
                 {/* <div className="flex items-center gap-2">
                   <span>Source:</span>
                   <div className="relative">
@@ -328,7 +353,7 @@ export default function NewArrivalsContent() {
                 <div
                   className={
                     viewMode === "grid"
-                      ? "grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3"
+                      ? "grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-9 xl:grid-cols-3"
                       : "grid grid-cols-1 gap-6 md:grid-cols-2"
                   }
                 >

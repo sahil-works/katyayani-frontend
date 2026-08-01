@@ -48,7 +48,7 @@ function UserIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[22px] w-[22px]"
+      className="h-5 w-5 sm:h-[22px] sm:w-[22px]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -66,7 +66,7 @@ function BagIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[22px] w-[22px]"
+      className="h-5 w-5 sm:h-[22px] sm:w-[22px]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
@@ -79,12 +79,12 @@ function BagIcon() {
   );
 }
 
-function ChevronDownIcon() {
+function ChevronDownIcon({ open = false }: { open?: boolean }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-3.5 w-3.5"
+      className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -101,7 +101,7 @@ function IndiaFlagIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 16"
-      className="h-4 w-6 rounded-[1px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)]"
+      className="h-3.5 w-5 rounded-[1px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)] sm:h-4 sm:w-6"
     >
       <rect width="24" height="16" fill="#fff" />
       <rect width="24" height="5.33" y="0" fill="#FF9933" />
@@ -120,11 +120,15 @@ export default function Header() {
   const { openLogin } = useLoginModal();
   const { isAuthenticated, user, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const desktopCategoryRef = useRef<HTMLDivElement>(null);
+  const mobileCategoryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProfileMenuOpen(false);
+    setCategoryMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -140,28 +144,56 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [profileMenuOpen]);
 
+  useEffect(() => {
+    if (!categoryMenuOpen) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const inDesktop = desktopCategoryRef.current?.contains(target);
+      const inMobile = mobileCategoryRef.current?.contains(target);
+      if (!inDesktop && !inMobile) {
+        setCategoryMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCategoryMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [categoryMenuOpen]);
+
   if (pathname === "/checkout" || pathname.startsWith("/checkout/")) {
     return null;
   }
 
+  const closeCategoryMenu = () => setCategoryMenuOpen(false);
+  const toggleCategoryMenu = () => setCategoryMenuOpen((prev) => !prev);
+
   return (
     <header className="sticky top-0 z-40 bg-white">
       {/* Announcement bar */}
-      <div className="bg-[#ea206d] px-4 py-2.5 text-center text-[13px] font-medium tracking-[0.02em] text-white sm:text-[14px]">
+      <div className="bg-[#ea206d] px-3 py-2 text-center text-[12px] font-medium tracking-[0.02em] text-white sm:px-4 sm:py-2.5 sm:text-[14px]">
         Discover Timeless Unstitched Elegance
       </div>
 
       {/* Logo / search / utilities */}
       <div className="border-b border-[#f0f0f0]">
-        <div className="relative mx-auto grid h-[88px] max-w-[1320px] grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6 lg:px-10">
+        <div className="relative mx-auto grid h-16 max-w-[1320px] grid-cols-[auto_1fr_auto] items-center gap-2 px-3 sm:h-[72px] sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-6 lg:h-[88px] lg:px-10">
           <button
             type="button"
             aria-label="Search products"
             aria-expanded={searchOpen}
             aria-haspopup="dialog"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-white text-[#6b6b6b] transition-colors hover:border-[#d0d0d0] sm:h-11 sm:w-auto sm:max-w-[240px] sm:justify-start sm:gap-2.5 sm:px-4 sm:text-left sm:text-[14px] sm:text-[#9a9a9a] lg:max-w-[260px]"
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-white text-[#6b6b6b] transition-colors hover:border-[#d0d0d0] sm:h-11 sm:w-auto sm:max-w-[240px] sm:justify-start sm:gap-2.5 sm:px-4 sm:text-left sm:text-[14px] sm:text-[#9a9a9a] lg:max-w-[260px]"
             onClick={() => {
               closeCart();
+              closeCategoryMenu();
               openSearch();
             }}
           >
@@ -171,10 +203,10 @@ export default function Header() {
 
           <Link
             href="/"
-            className="absolute left-1/2 top-1/2 flex max-w-[46vw] -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center sm:max-w-none"
+            className="flex min-w-0 flex-col items-center justify-self-center px-1 text-center sm:absolute sm:left-1/2 sm:top-1/2 sm:max-w-none sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-0"
           >
             <span
-              className={`${dancingScript.className} text-[20px] font-bold leading-none tracking-[0.01em] text-[#ea206d] sm:text-[28px] lg:text-[30px]`}
+              className={`${dancingScript.className} max-w-[42vw] truncate text-[18px] font-bold leading-none tracking-[0.01em] text-[#ea206d] sm:max-w-none sm:text-[28px] lg:text-[30px]`}
             >
               Katyayani Designer Hub
             </span>
@@ -183,9 +215,9 @@ export default function Header() {
             </span>
           </Link>
 
-          <div className="col-start-3 flex items-center justify-end gap-4 text-[#2a2a2a] sm:gap-5">
+          <div className="flex items-center justify-end gap-1 text-[#2a2a2a] sm:col-start-3 sm:gap-2">
             <span
-              className="inline-flex items-center"
+              className="hidden items-center sm:inline-flex sm:px-1"
               title="India"
               aria-label="India"
             >
@@ -199,14 +231,17 @@ export default function Header() {
                   aria-label="Account menu"
                   aria-haspopup="menu"
                   aria-expanded={profileMenuOpen}
-                  className="cursor-pointer transition-colors hover:text-[#ea206d]"
-                  onClick={() => setProfileMenuOpen((prev) => !prev)}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center transition-colors hover:text-[#ea206d]"
+                  onClick={() => {
+                    closeCategoryMenu();
+                    setProfileMenuOpen((prev) => !prev);
+                  }}
                 >
                   <UserIcon />
                 </button>
 
                 <div
-                  className={`absolute right-0 top-full z-30 mt-3 w-[220px] rounded-2xl border border-[#eceee0] bg-white p-2 shadow-[0_16px_36px_rgba(0,0,0,0.12)] transition-all duration-200 ${
+                  className={`absolute right-0 top-full z-30 mt-2 w-[min(220px,calc(100vw-1.5rem))] rounded-2xl border border-[#eceee0] bg-white p-2 shadow-[0_16px_36px_rgba(0,0,0,0.12)] transition-all duration-200 sm:mt-3 ${
                     profileMenuOpen
                       ? "pointer-events-auto translate-y-0 opacity-100"
                       : "pointer-events-none -translate-y-1 opacity-0"
@@ -259,10 +294,11 @@ export default function Header() {
                 type="button"
                 aria-label="Account"
                 aria-haspopup="dialog"
-                className="cursor-pointer transition-colors hover:text-[#ea206d]"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center transition-colors hover:text-[#ea206d]"
                 onClick={() => {
                   closeSearch();
                   closeCart();
+                  closeCategoryMenu();
                   openLogin();
                 }}
               >
@@ -275,15 +311,16 @@ export default function Header() {
               aria-label={`Shopping cart, ${itemCount} items`}
               aria-expanded={cartOpen}
               aria-haspopup="dialog"
-              className="relative cursor-pointer transition-colors hover:text-[#ea206d]"
+              className="relative flex h-10 w-10 cursor-pointer items-center justify-center transition-colors hover:text-[#ea206d]"
               onClick={() => {
                 closeSearch();
+                closeCategoryMenu();
                 openCart();
               }}
             >
               <BagIcon />
               <span
-                className={`absolute -top-1.5 -right-2 grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold text-white ${
+                className={`absolute top-1 right-0.5 grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold text-white ${
                   itemCount > 0 ? "bg-[#ea206d]" : "bg-[#f0a0c0]"
                 }`}
               >
@@ -296,20 +333,38 @@ export default function Header() {
 
       {/* Navigation */}
       <div className="border-b border-[#f0f0f0] bg-[#fafafa]">
+        {/* Desktop nav */}
         <nav className="mx-auto hidden max-w-[1320px] items-center justify-center gap-8 px-6 py-3.5 text-[15px] font-medium tracking-[0.06em] text-[#1a1a1a] uppercase lg:flex lg:gap-10 lg:px-10 lg:text-[16px]">
           {navItems.map((item) =>
             item.label === "CATEGORY" ? (
-              <div key={item.label} className="group relative">
+              <div
+                key={item.label}
+                ref={desktopCategoryRef}
+                className="relative"
+                onMouseEnter={() => setCategoryMenuOpen(true)}
+                onMouseLeave={() => setCategoryMenuOpen(false)}
+              >
                 <button
                   type="button"
                   className="flex items-center gap-1.5 text-[#1a1a1a] transition-colors hover:text-[#ea206d]"
                   aria-haspopup="menu"
+                  aria-expanded={categoryMenuOpen}
+                  onClick={toggleCategoryMenu}
                 >
                   <span>{item.label}</span>
-                  <ChevronDownIcon />
+                  <ChevronDownIcon open={categoryMenuOpen} />
                 </button>
-                <div className="invisible absolute left-1/2 top-full z-20 mt-3 w-60 -translate-x-1/2 rounded-xl border border-[#e9e9e9] bg-white p-2 opacity-0 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-200 group-hover:visible group-hover:opacity-100 normal-case tracking-normal">
-                  <CategoryMenuLinks />
+                <div
+                  className={`absolute left-1/2 top-full z-20 w-60 -translate-x-1/2 pt-3 transition-all duration-200 normal-case tracking-normal ${
+                    categoryMenuOpen
+                      ? "pointer-events-auto visible translate-y-0 opacity-100"
+                      : "pointer-events-none invisible -translate-y-1 opacity-0"
+                  }`}
+                  role="menu"
+                >
+                  <div className="rounded-xl border border-[#e9e9e9] bg-white p-2 shadow-[0_14px_40px_rgba(0,0,0,0.12)]">
+                    <CategoryMenuLinks onNavigate={closeCategoryMenu} />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -325,33 +380,59 @@ export default function Header() {
         </nav>
 
         {/* Compact nav for smaller screens */}
-        <nav className="mx-auto flex max-w-[1320px] items-center gap-5 overflow-x-auto px-4 py-3 text-[14px] font-medium tracking-[0.04em] text-[#1a1a1a] uppercase lg:hidden">
-          {navItems.map((item) =>
-            item.label === "CATEGORY" ? (
-              <div key={item.label} className="group relative shrink-0">
+        <div className="relative lg:hidden" ref={mobileCategoryRef}>
+          <nav
+            className="-mx-px flex max-w-[1320px] items-center gap-1 overflow-x-auto overscroll-x-contain px-2 py-1.5 text-[13px] font-medium tracking-[0.04em] text-[#1a1a1a] uppercase [scrollbar-width:none] sm:gap-2 sm:px-4 sm:py-2.5 sm:text-[14px] [&::-webkit-scrollbar]:hidden"
+            aria-label="Primary"
+          >
+            {navItems.map((item) =>
+              item.label === "CATEGORY" ? (
                 <button
+                  key={item.label}
                   type="button"
-                  className="flex items-center gap-1 text-[#1a1a1a]"
+                  className={`flex shrink-0 items-center gap-1 rounded-lg px-3 py-2.5 transition-colors ${
+                    categoryMenuOpen
+                      ? "bg-[#fdf0f5] text-[#ea206d]"
+                      : "text-[#1a1a1a] active:bg-[#f5f5f5]"
+                  }`}
                   aria-haspopup="menu"
+                  aria-expanded={categoryMenuOpen}
+                  onClick={toggleCategoryMenu}
                 >
                   <span>{item.label}</span>
-                  <ChevronDownIcon />
+                  <ChevronDownIcon open={categoryMenuOpen} />
                 </button>
-                <div className="invisible absolute left-0 top-full z-20 mt-2 w-56 rounded-xl border border-[#e9e9e9] bg-white p-2 opacity-0 shadow-[0_14px_40px_rgba(0,0,0,0.12)] transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 normal-case tracking-normal">
-                  <CategoryMenuLinks />
-                </div>
-              </div>
-            ) : (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="shrink-0 whitespace-nowrap transition-colors hover:text-[#ea206d]"
-              >
-                {item.label}
-              </Link>
-            ),
-          )}
-        </nav>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 transition-colors active:bg-[#f5f5f5] hover:text-[#ea206d]"
+                  onClick={closeCategoryMenu}
+                >
+                  {item.label}
+                </Link>
+              ),
+            )}
+          </nav>
+
+          {/* Full-bleed panel — outside overflow-x-auto so it is not clipped */}
+          <div
+            className={`absolute inset-x-0 top-full z-30 origin-top border-b border-[#e9e9e9] bg-white shadow-[0_12px_28px_rgba(0,0,0,0.1)] transition-all duration-200 ${
+              categoryMenuOpen
+                ? "pointer-events-auto visible translate-y-0 opacity-100"
+                : "pointer-events-none invisible -translate-y-1 opacity-0"
+            }`}
+            role="menu"
+            aria-hidden={!categoryMenuOpen}
+          >
+            <div className="mx-auto max-h-[min(60vh,420px)] max-w-[1320px] overflow-y-auto overscroll-contain px-2 py-2 sm:px-4">
+              <CategoryMenuLinks
+                itemClassName="group/link flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-[15px] text-[#343434] transition-colors active:bg-[#fdf0f5] hover:bg-[#fdf0f5] hover:text-[#ea206d]"
+                onNavigate={closeCategoryMenu}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );

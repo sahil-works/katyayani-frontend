@@ -47,10 +47,12 @@ export function CategoryNavLinks({
 
 type CategoryMenuLinksProps = {
   itemClassName?: string;
+  onNavigate?: () => void;
 };
 
 export function CategoryMenuLinks({
   itemClassName = "group/link flex items-center gap-3 rounded-lg px-3 py-2.5 text-[16px] text-[#343434] transition-colors hover:bg-[#fdf0f5] hover:text-[#ea206d]",
+  onNavigate,
 }: CategoryMenuLinksProps) {
   const categoriesQuery = useQuery(categoriesQueryOptions());
   const categories = categoriesQuery.data ?? [];
@@ -74,6 +76,7 @@ export function CategoryMenuLinks({
           key={category.id}
           href={buildProductListingHref({ categoryId: category.id })}
           className={itemClassName}
+          onClick={onNavigate}
         >
           <span
             aria-hidden="true"
