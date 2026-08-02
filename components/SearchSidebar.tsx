@@ -174,7 +174,7 @@ export function SearchSidebar() {
             />
             <button
               type="submit"
-              className="absolute right-0 bottom-1 grid h-8 w-8 place-items-center text-[#2f2f2f]"
+              className="absolute right-0 bottom-0 grid h-11 w-11 place-items-center text-[#2f2f2f]"
               aria-label="Search products"
             >
               <SearchInputIcon className="h-6 w-6 shrink-0" />

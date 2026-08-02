@@ -367,7 +367,7 @@ export function LoginModal() {
       />
 
       <div
-        className={`fixed inset-0 z-101 flex items-center justify-center p-4 sm:p-6 transition-[opacity,transform] duration-300 ease-out ${
+        className={`fixed inset-0 z-101 flex items-end justify-center overflow-y-auto overscroll-contain p-0 sm:items-center sm:p-6 transition-[opacity,transform] duration-300 ease-out ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
@@ -376,7 +376,7 @@ export function LoginModal() {
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={descriptionId}
-          className={`relative w-full max-w-[440px] origin-center rounded-[1.35rem] border border-[#f5e6ed] bg-white shadow-[0_25px_80px_-12px_rgba(0,0,0,0.25),0_0_0_1px_rgba(234,32,109,0.06)] transition-transform duration-300 ease-out ${
+          className={`relative my-auto w-full max-h-[min(92dvh,720px)] max-w-[440px] origin-bottom overflow-y-auto overscroll-contain rounded-t-[1.35rem] border border-[#f5e6ed] bg-white shadow-[0_25px_80px_-12px_rgba(0,0,0,0.25),0_0_0_1px_rgba(234,32,109,0.06)] transition-transform duration-300 ease-out sm:origin-center sm:rounded-[1.35rem] ${
             open ? "scale-100" : "scale-[0.96]"
           }`}
           onClick={(e) => e.stopPropagation()}

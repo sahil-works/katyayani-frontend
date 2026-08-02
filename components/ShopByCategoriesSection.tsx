@@ -30,7 +30,7 @@ export default function ShopByCategoriesSection() {
             <p className={`${dancingScript.className} text-[24px] leading-none text-[#ea206d]`}>
               Browse by Style & Need
             </p>
-            <h2 className="mt-3 text-[36px] leading-none font-medium text-[#111]">
+            <h2 className="mt-3 text-[28px] leading-tight font-medium text-[#111] sm:text-[36px] sm:leading-none">
               Shop By Categories
             </h2>
           </AnimateOnView>
@@ -86,7 +86,7 @@ export default function ShopByCategoriesSection() {
                         className="h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
-                    <h3 className="mt-3 text-[21px] leading-none text-[#111] transition-colors group-hover:text-[#ea206d]">
+                    <h3 className="mt-3 text-[15px] leading-snug text-[#111] transition-colors group-hover:text-[#ea206d] sm:text-[18px] lg:text-[21px] lg:leading-none">
                       {category.title}
                     </h3>
                     {typeof category.productCount === "number" ? (

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useCartSidebar } from "./CartSidebar";
 import { useLoginModal } from "./LoginModal";
 import { useSearchSidebar } from "./SearchSidebar";
@@ -96,6 +96,38 @@ function ChevronDownIcon({ open = false }: { open?: boolean }) {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
 function IndiaFlagIcon() {
   return (
     <svg
@@ -115,20 +147,24 @@ function IndiaFlagIcon() {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const mobileNavTitleId = useId();
   const { open: searchOpen, openSearch, closeSearch } = useSearchSidebar();
   const { open: cartOpen, openCart, closeCart, itemCount } = useCartSidebar();
   const { openLogin } = useLoginModal();
   const { isAuthenticated, user, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const desktopCategoryRef = useRef<HTMLDivElement>(null);
-  const mobileCategoryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProfileMenuOpen(false);
     setCategoryMenuOpen(false);
+    setMobileNavOpen(false);
+    setMobileCategoriesOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -148,10 +184,7 @@ export default function Header() {
     if (!categoryMenuOpen) return;
 
     const handleOutsideClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const inDesktop = desktopCategoryRef.current?.contains(target);
-      const inMobile = mobileCategoryRef.current?.contains(target);
-      if (!inDesktop && !inMobile) {
+      if (!desktopCategoryRef.current?.contains(event.target as Node)) {
         setCategoryMenuOpen(false);
       }
     };
@@ -168,11 +201,32 @@ export default function Header() {
     };
   }, [categoryMenuOpen]);
 
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [mobileNavOpen]);
+
   if (pathname === "/checkout" || pathname.startsWith("/checkout/")) {
     return null;
   }
 
   const closeCategoryMenu = () => setCategoryMenuOpen(false);
+  const closeMobileNav = () => {
+    setMobileNavOpen(false);
+    setMobileCategoriesOpen(false);
+  };
   const toggleCategoryMenu = () => setCategoryMenuOpen((prev) => !prev);
 
   return (
@@ -184,29 +238,50 @@ export default function Header() {
 
       {/* Logo / search / utilities */}
       <div className="border-b border-[#f0f0f0]">
-        <div className="relative mx-auto grid h-16 max-w-[1320px] grid-cols-[auto_1fr_auto] items-center gap-2 px-3 sm:h-[72px] sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-6 lg:h-[88px] lg:px-10">
-          <button
-            type="button"
-            aria-label="Search products"
-            aria-expanded={searchOpen}
-            aria-haspopup="dialog"
-            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-white text-[#6b6b6b] transition-colors hover:border-[#d0d0d0] sm:h-11 sm:w-auto sm:max-w-[240px] sm:justify-start sm:gap-2.5 sm:px-4 sm:text-left sm:text-[14px] sm:text-[#9a9a9a] lg:max-w-[260px]"
-            onClick={() => {
-              closeCart();
-              closeCategoryMenu();
-              openSearch();
-            }}
-          >
-            <SearchIcon className="h-4 w-4 shrink-0 text-[#6b6b6b]" />
-            <span className="hidden truncate sm:inline">Search products</span>
-          </button>
+        <div className="relative mx-auto grid h-16 max-w-[1320px] grid-cols-[auto_1fr_auto] items-center gap-1.5 px-3 sm:h-[72px] sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-6 lg:h-[88px] lg:px-10">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileNavOpen}
+              aria-controls="mobile-nav-drawer"
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center text-[#2a2a2a] transition-colors hover:text-[#ea206d] lg:hidden"
+              onClick={() => {
+                closeSearch();
+                closeCart();
+                closeCategoryMenu();
+                setProfileMenuOpen(false);
+                setMobileNavOpen((prev) => !prev);
+              }}
+            >
+              {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+
+            <button
+              type="button"
+              aria-label="Search products"
+              aria-expanded={searchOpen}
+              aria-haspopup="dialog"
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#e5e5e5] bg-white text-[#6b6b6b] transition-colors hover:border-[#d0d0d0] sm:h-11 sm:w-auto sm:max-w-[240px] sm:justify-start sm:gap-2.5 sm:px-4 sm:text-left sm:text-[14px] sm:text-[#9a9a9a] lg:max-w-[260px]"
+              onClick={() => {
+                closeCart();
+                closeCategoryMenu();
+                closeMobileNav();
+                openSearch();
+              }}
+            >
+              <SearchIcon className="h-4 w-4 shrink-0 text-[#6b6b6b]" />
+              <span className="hidden truncate sm:inline">Search products</span>
+            </button>
+          </div>
 
           <Link
             href="/"
             className="flex min-w-0 flex-col items-center justify-self-center px-1 text-center sm:absolute sm:left-1/2 sm:top-1/2 sm:max-w-none sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-0"
+            onClick={closeMobileNav}
           >
             <span
-              className={`${dancingScript.className} max-w-[42vw] truncate text-[18px] font-bold leading-none tracking-[0.01em] text-[#ea206d] sm:max-w-none sm:text-[28px] lg:text-[30px]`}
+              className={`${dancingScript.className} max-w-[38vw] truncate text-[17px] font-bold leading-none tracking-[0.01em] text-[#ea206d] sm:max-w-none sm:text-[28px] lg:text-[30px]`}
             >
               Katyayani Designer Hub
             </span>
@@ -215,7 +290,7 @@ export default function Header() {
             </span>
           </Link>
 
-          <div className="flex items-center justify-end gap-1 text-[#2a2a2a] sm:col-start-3 sm:gap-2">
+          <div className="flex items-center justify-end gap-0.5 text-[#2a2a2a] sm:col-start-3 sm:gap-2">
             <span
               className="hidden items-center sm:inline-flex sm:px-1"
               title="India"
@@ -234,6 +309,7 @@ export default function Header() {
                   className="flex h-10 w-10 cursor-pointer items-center justify-center transition-colors hover:text-[#ea206d]"
                   onClick={() => {
                     closeCategoryMenu();
+                    closeMobileNav();
                     setProfileMenuOpen((prev) => !prev);
                   }}
                 >
@@ -299,6 +375,7 @@ export default function Header() {
                   closeSearch();
                   closeCart();
                   closeCategoryMenu();
+                  closeMobileNav();
                   openLogin();
                 }}
               >
@@ -315,6 +392,7 @@ export default function Header() {
               onClick={() => {
                 closeSearch();
                 closeCategoryMenu();
+                closeMobileNav();
                 openCart();
               }}
             >
@@ -331,10 +409,9 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="border-b border-[#f0f0f0] bg-[#fafafa]">
-        {/* Desktop nav */}
-        <nav className="mx-auto hidden max-w-[1320px] items-center justify-center gap-8 px-6 py-3.5 text-[15px] font-medium tracking-[0.06em] text-[#1a1a1a] uppercase lg:flex lg:gap-10 lg:px-10 lg:text-[16px]">
+      {/* Desktop navigation */}
+      <div className="hidden border-b border-[#f0f0f0] bg-[#fafafa] lg:block">
+        <nav className="mx-auto flex max-w-[1320px] items-center justify-center gap-8 px-6 py-3.5 text-[15px] font-medium tracking-[0.06em] text-[#1a1a1a] uppercase lg:gap-10 lg:px-10 lg:text-[16px]">
           {navItems.map((item) =>
             item.label === "CATEGORY" ? (
               <div
@@ -378,62 +455,105 @@ export default function Header() {
             ),
           )}
         </nav>
-
-        {/* Compact nav for smaller screens */}
-        <div className="relative lg:hidden" ref={mobileCategoryRef}>
-          <nav
-            className="-mx-px flex max-w-[1320px] items-center gap-1 overflow-x-auto overscroll-x-contain px-2 py-1.5 text-[13px] font-medium tracking-[0.04em] text-[#1a1a1a] uppercase [scrollbar-width:none] sm:gap-2 sm:px-4 sm:py-2.5 sm:text-[14px] [&::-webkit-scrollbar]:hidden"
-            aria-label="Primary"
-          >
-            {navItems.map((item) =>
-              item.label === "CATEGORY" ? (
-                <button
-                  key={item.label}
-                  type="button"
-                  className={`flex shrink-0 items-center gap-1 rounded-lg px-3 py-2.5 transition-colors ${
-                    categoryMenuOpen
-                      ? "bg-[#fdf0f5] text-[#ea206d]"
-                      : "text-[#1a1a1a] active:bg-[#f5f5f5]"
-                  }`}
-                  aria-haspopup="menu"
-                  aria-expanded={categoryMenuOpen}
-                  onClick={toggleCategoryMenu}
-                >
-                  <span>{item.label}</span>
-                  <ChevronDownIcon open={categoryMenuOpen} />
-                </button>
-              ) : (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 transition-colors active:bg-[#f5f5f5] hover:text-[#ea206d]"
-                  onClick={closeCategoryMenu}
-                >
-                  {item.label}
-                </Link>
-              ),
-            )}
-          </nav>
-
-          {/* Full-bleed panel — outside overflow-x-auto so it is not clipped */}
-          <div
-            className={`absolute inset-x-0 top-full z-30 origin-top border-b border-[#e9e9e9] bg-white shadow-[0_12px_28px_rgba(0,0,0,0.1)] transition-all duration-200 ${
-              categoryMenuOpen
-                ? "pointer-events-auto visible translate-y-0 opacity-100"
-                : "pointer-events-none invisible -translate-y-1 opacity-0"
-            }`}
-            role="menu"
-            aria-hidden={!categoryMenuOpen}
-          >
-            <div className="mx-auto max-h-[min(60vh,420px)] max-w-[1320px] overflow-y-auto overscroll-contain px-2 py-2 sm:px-4">
-              <CategoryMenuLinks
-                itemClassName="group/link flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-[15px] text-[#343434] transition-colors active:bg-[#fdf0f5] hover:bg-[#fdf0f5] hover:text-[#ea206d]"
-                onNavigate={closeCategoryMenu}
-              />
-            </div>
-          </div>
-        </div>
       </div>
+
+      {/* Mobile drawer overlay */}
+      <div
+        role="presentation"
+        aria-hidden={!mobileNavOpen}
+        className={`fixed inset-0 z-50 bg-black/40 transition-opacity duration-300 lg:hidden ${
+          mobileNavOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        }`}
+        onClick={closeMobileNav}
+      />
+
+      {/* Mobile navigation drawer */}
+      <aside
+        id="mobile-nav-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={mobileNavTitleId}
+        aria-hidden={!mobileNavOpen}
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(86vw,340px)] max-w-full flex-col bg-white shadow-[8px_0_32px_rgba(0,0,0,0.14)] transition-transform duration-300 ease-out lg:hidden ${
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-[#f0f0f0] px-4 py-4">
+          <p
+            id={mobileNavTitleId}
+            className={`${dancingScript.className} text-[22px] font-bold text-[#ea206d]`}
+          >
+            Menu
+          </p>
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="flex h-10 w-10 items-center justify-center text-[#2a2a2a] transition-colors hover:text-[#ea206d]"
+            onClick={closeMobileNav}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <nav
+          className="flex-1 overflow-y-auto overscroll-contain px-3 py-3"
+          aria-label="Mobile primary"
+        >
+          {navItems.map((item) =>
+            item.label === "CATEGORY" ? (
+              <div key={item.label} className="border-b border-[#f3f3f3]">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between px-3 py-3.5 text-left text-[14px] font-medium tracking-[0.05em] text-[#1a1a1a] uppercase"
+                  aria-expanded={mobileCategoriesOpen}
+                  onClick={() => setMobileCategoriesOpen((prev) => !prev)}
+                >
+                  <span>Category</span>
+                  <ChevronDownIcon open={mobileCategoriesOpen} />
+                </button>
+                <div
+                  className={`overflow-hidden transition-[max-height,opacity] duration-200 ${
+                    mobileCategoriesOpen
+                      ? "max-h-[60vh] opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="pb-3 pl-1">
+                    <CategoryMenuLinks
+                      itemClassName="group/link flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] normal-case tracking-normal text-[#343434] transition-colors active:bg-[#fdf0f5] hover:bg-[#fdf0f5] hover:text-[#ea206d]"
+                      onNavigate={closeMobileNav}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="block border-b border-[#f3f3f3] px-3 py-3.5 text-[14px] font-medium tracking-[0.05em] text-[#1a1a1a] uppercase transition-colors active:bg-[#fdf0f5] hover:text-[#ea206d]"
+                onClick={closeMobileNav}
+              >
+                {item.label}
+              </Link>
+            ),
+          )}
+        </nav>
+
+        <div className="border-t border-[#f0f0f0] px-4 py-4">
+          <p className="text-[12px] tracking-[0.06em] text-[#8a8a8a] uppercase">
+            Need help?
+          </p>
+          <Link
+            href="/contact-us"
+            className="mt-2 inline-flex text-[15px] font-medium text-[#ea206d]"
+            onClick={closeMobileNav}
+          >
+            Contact us
+          </Link>
+        </div>
+      </aside>
     </header>
   );
 }

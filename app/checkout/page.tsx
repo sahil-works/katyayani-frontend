@@ -157,10 +157,10 @@ function CheckoutHeader() {
 
   return (
     <header className="border-b border-[#ebebeb] bg-white">
-      <div className="mx-auto flex h-[74px] w-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-3 px-4 sm:h-[74px] sm:px-6">
         <Link
           href="/"
-          className={`${dancingScript.className} text-[30px] font-bold leading-none tracking-[0.01em] text-[#ea206d]`}
+          className={`${dancingScript.className} min-w-0 truncate text-[20px] font-bold leading-none tracking-[0.01em] text-[#ea206d] sm:text-[28px] lg:text-[30px]`}
         >
           Katyayani Designer Hub
         </Link>
@@ -168,10 +168,10 @@ function CheckoutHeader() {
           type="button"
           onClick={openCart}
           aria-label={`Shopping cart, ${itemCount} items`}
-          className="relative text-[#2f2f2f]"
+          className="relative shrink-0 text-[#2f2f2f]"
         >
-          <span className="text-[22px]">Cart</span>
-          <span className="absolute -right-4 -top-2 min-w-4 rounded-full bg-black px-1 text-center text-[10px] font-semibold text-white">
+          <span className="text-[16px] sm:text-[22px]">Cart</span>
+          <span className="absolute -right-3 -top-2 min-w-4 rounded-full bg-black px-1 text-center text-[10px] font-semibold text-white sm:-right-4">
             {itemCount > 99 ? "99+" : itemCount}
           </span>
         </button>
@@ -707,7 +707,7 @@ export default function CheckoutPage() {
 
       <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section className="bg-white px-4 py-7 sm:px-6 lg:pr-10">
-          <h1 className="text-[32px] font-semibold text-[#1f1f1f]">Checkout</h1>
+          <h1 className="text-[26px] font-semibold text-[#1f1f1f] sm:text-[32px]">Checkout</h1>
           <p className="mt-2 text-[14px] leading-relaxed text-[#666]">
             Cart totals are revalidated with the backend before order creation.
           </p>

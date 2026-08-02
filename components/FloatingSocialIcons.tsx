@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 const WHATSAPP_URL = "https://wa.me/919041835216";
 const INSTAGRAM_URL =
   "https://www.instagram.com/katyayani_designer_hub/?hl=en";
@@ -34,9 +36,14 @@ function InstagramIcon() {
 }
 
 export default function FloatingSocialIcons() {
+  const pathname = usePathname();
+  if (pathname === "/checkout" || pathname.startsWith("/checkout/")) {
+    return null;
+  }
+
   return (
     <div
-      className="pointer-events-none fixed right-4 bottom-5 z-50 flex flex-col gap-3 sm:right-6 sm:bottom-7"
+      className="pointer-events-none fixed right-3 bottom-20 z-50 flex flex-col gap-3 sm:right-6 sm:bottom-7"
       aria-label="Social media links"
     >
       <a

@@ -59,7 +59,7 @@ export default function HomeProductSection({
                 {eyebrow}
               </p>
             ) : null}
-            <h2 className={`${eyebrow ? "mt-3" : ""} text-[36px] leading-none font-medium text-[#111]`}>
+            <h2 className={`${eyebrow ? "mt-3" : ""} text-[28px] leading-tight font-medium text-[#111] sm:text-[36px] sm:leading-none`}>
               {title}
             </h2>
           </AnimateOnView>

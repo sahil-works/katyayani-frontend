@@ -60,13 +60,13 @@ export default function Home() {
         >
           <div className="absolute inset-0 bg-black/45" />
 
-          <div className="pointer-events-none absolute left-[15%] top-1/2 h-[240px] w-[44px] -translate-y-1/2">
+          <div className="pointer-events-none absolute left-[15%] top-1/2 hidden h-[240px] w-[44px] -translate-y-1/2 md:block">
             <span className="absolute left-0 top-0 h-[3px] w-full bg-white" />
             <span className="absolute left-0 top-0 h-full w-[3px] bg-white" />
             <span className="absolute left-0 bottom-0 h-[3px] w-full bg-white" />
           </div>
 
-          <div className="pointer-events-none absolute right-[15%] top-1/2 h-[240px] w-[44px] -translate-y-1/2">
+          <div className="pointer-events-none absolute right-[15%] top-1/2 hidden h-[240px] w-[44px] -translate-y-1/2 md:block">
             <span className="absolute right-0 top-0 h-[3px] w-full bg-white" />
             <span className="absolute right-0 top-0 h-full w-[3px] bg-white" />
             <span className="absolute right-0 bottom-0 h-[3px] w-full bg-white" />

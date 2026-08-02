@@ -130,7 +130,7 @@ export default function NewArrivalsContent() {
             </p>
             <h1
               id="catalog-heading"
-              className="mt-3 text-center text-[34px] leading-none font-medium tracking-[0.02em] text-[#222] sm:text-[38px]"
+              className="mt-3 text-center text-[26px] leading-tight font-medium tracking-[0.02em] text-[#222] sm:text-[34px] sm:leading-none lg:text-[38px]"
             >
               {heading.toUpperCase()}
             </h1>

@@ -155,8 +155,10 @@ function ContactEditor({
       </div>
 
       {mode === "idle" ? (
-        <div className="mt-1 flex items-end justify-between gap-3">
-          <p className="text-[18px] font-medium text-[#222]">{shown}</p>
+        <div className="mt-1 flex flex-col items-start gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+          <p className="min-w-0 break-all text-[16px] font-medium text-[#222] sm:text-[18px]">
+            {shown}
+          </p>
           <button
             type="button"
             onClick={startEditing}

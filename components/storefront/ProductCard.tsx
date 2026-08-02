@@ -101,7 +101,7 @@ export function ProductCard({
             className={
               isList
                 ? "h-[220px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] sm:w-[190px]"
-                : "h-[380px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                : "h-[220px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] sm:h-[300px] lg:h-[380px]"
             }
           />
           {!product.inStock ? (
@@ -122,10 +122,10 @@ export function ProductCard({
             </p>
           ) : null}
           <h3
-            className={`text-[20px] leading-[1.15] font-medium text-[#222] ${
+            className={`text-[15px] leading-[1.2] font-medium text-[#222] sm:text-[18px] lg:text-[20px] ${
               isList
                 ? "mt-2 text-left"
-                : "mt-3 overflow-hidden text-ellipsis whitespace-nowrap text-center"
+                : "mt-2 overflow-hidden text-ellipsis whitespace-nowrap text-center sm:mt-3"
             }`}
           >
             {product.title}

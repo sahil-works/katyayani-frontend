@@ -546,7 +546,7 @@ function CartLineRow({
             <button
               type="button"
               disabled={isLoading || invalid}
-              className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
+              className="grid h-11 w-11 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
               aria-label={`Decrease quantity for ${line.productTitle}`}
               onClick={() => updateQuantity(line, line.quantity - 1)}
             >
@@ -558,7 +558,7 @@ function CartLineRow({
             <button
               type="button"
               disabled={isLoading || invalid || reachedAvailableLimit}
-              className="grid h-8 w-9 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
+              className="grid h-11 w-11 place-items-center text-[#2f2f2f] transition-colors hover:bg-[#f5f5f5] disabled:opacity-40"
               aria-label={`Increase quantity for ${line.productTitle}`}
               onClick={() => updateQuantity(line, line.quantity + 1)}
             >

@@ -74,8 +74,8 @@ export default function ProductHeroGallery({
         <div
           className={`relative overflow-hidden rounded-[4px] bg-[#f8f8f8] ${
             hasMultipleImages
-              ? "min-h-[500px] sm:min-h-[660px] lg:min-h-[760px]"
-              : "aspect-[3/4] min-h-[420px] sm:aspect-[4/5] sm:min-h-[520px] lg:min-h-[680px]"
+              ? "aspect-[3/4] min-h-[min(52vh,360px)] sm:min-h-[520px] lg:aspect-auto lg:min-h-[760px]"
+              : "aspect-[3/4] min-h-[min(48vh,320px)] sm:aspect-[4/5] sm:min-h-[520px] lg:min-h-[680px]"
           }`}
         >
           <button
@@ -93,7 +93,7 @@ export default function ProductHeroGallery({
               className="object-contain object-center transition-opacity duration-200 group-hover:opacity-95"
               sizes="(min-width: 1024px) 58vw, 100vw"
             />
-            <span className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+            <span className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-[#1e1a15] opacity-100 backdrop-blur transition-opacity duration-200 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100">
               <Expand className="h-4.5 w-4.5" strokeWidth={1.7} aria-hidden />
             </span>
           </button>

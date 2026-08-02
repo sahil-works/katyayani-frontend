@@ -86,7 +86,7 @@ export default function CatalogPageContent({ slug }: CatalogPageContentProps) {
           >
             Curated Collection
           </p>
-          <h1 className="mt-4 max-w-[760px] text-[42px] leading-[1.05] font-medium tracking-[0.01em] text-[#111] lg:text-[56px]">
+          <h1 className="mt-4 max-w-[760px] text-[28px] leading-[1.1] font-medium tracking-[0.01em] text-[#111] sm:text-[36px] lg:text-[56px] lg:leading-[1.05]">
             {catalog?.name ?? "Catalog"}
           </h1>
           {catalog?.description ? (
