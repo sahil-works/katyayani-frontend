@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ProductVariantViewModel } from "../../lib/storefront/types/viewModels";
 
 type AddToCartPanelProps = {
@@ -21,8 +25,14 @@ export default function AddToCartPanel({
   onQuantityChange,
   onAddToCart,
 }: AddToCartPanelProps) {
+  const [mounted, setMounted] = useState(false);
   const canDecrease = quantity > 1;
   const canIncrease = quantity < maxQuantity && inStock;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const controls = (
     <div className="flex items-stretch gap-2.5 sm:gap-3">
@@ -65,16 +75,33 @@ export default function AddToCartPanel({
     </div>
   );
 
+  const mobileBar =
+    mounted &&
+    createPortal(
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 bg-white sm:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="border-t border-[#ececec] px-3 pt-3 pb-3 shadow-[0_-6px_20px_rgba(0,0,0,0.06)]">
+          <div className="mx-auto max-w-[1320px]">{controls}</div>
+        </div>
+      </div>,
+      document.body,
+    );
+
   return (
     <div className="space-y-4">
       {/* Inline on tablet/desktop */}
       <div className="hidden sm:block">{controls}</div>
 
-      {/* Sticky bottom bar on mobile — always clear of floating social icons */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#ececec] bg-white/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md sm:hidden">
-        <div className="mx-auto max-w-[1320px]">{controls}</div>
-      </div>
-      <div className="h-[4.25rem] sm:hidden" aria-hidden />
+      {mobileBar}
+
+      {/* Reserve space so content never peeks under the solid bar */}
+      <div
+        className="sm:hidden"
+        style={{ height: "calc(4.5rem + env(safe-area-inset-bottom, 0px))" }}
+        aria-hidden
+      />
 
       {!selectedVariant ? (
         <p className="text-[13px] text-[#9a3f3f]">Please select an available variant.</p>
