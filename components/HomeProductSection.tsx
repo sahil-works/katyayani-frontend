@@ -38,7 +38,7 @@ export default function HomeProductSection({
   description,
   params,
   className = "bg-[#f5f5f5] py-16",
-  gridClassName = "grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4",
+  gridClassName = "grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-10 lg:grid-cols-4",
   skeletonRows = 4,
   emptyTitle,
   emptyDescription,
@@ -51,7 +51,7 @@ export default function HomeProductSection({
 
   return (
     <section className={className}>
-      <div className="mx-auto max-w-[1320px] px-6 lg:px-10">
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-10">
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <AnimateOnView animation="fadeInLeft" duration={0.8}>
             {eyebrow ? (
