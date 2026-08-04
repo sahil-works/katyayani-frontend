@@ -1,3 +1,4 @@
+import Link from "next/link";
 import HeroBanner from "../components/HeroBanner";
 import BestCollectionSection from "../components/BestCollectionSection";
 import NewArrivalsSection from "../components/NewArrivalsSection";
@@ -81,12 +82,12 @@ export default function Home() {
               Join Us on Our Instagram and YouTube Handle for More Frequent
               Updates
             </h2>
-            <button
-              type="button"
-              className="mt-8 min-w-[118px] rounded-[5px] bg-[#ea206d] px-6 py-3 text-[20px] font-medium text-white"
+            <Link
+              href="/collections"
+              className="mt-8 inline-flex min-w-[118px] items-center justify-center rounded-[5px] bg-[#ea206d] px-6 py-3 text-[20px] font-medium text-white"
             >
               Shop Now
-            </button>
+            </Link>
           </AnimateOnView>
         </div>
       </section>
