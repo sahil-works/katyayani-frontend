@@ -17,8 +17,8 @@ export default function HeroBanner() {
         src={homeBannerImage}
         alt="Expect the best from Katyayani Designer Hub — Discover all the items with affordable prices, and take advantage of our products."
         className="block h-auto w-full max-w-none object-cover object-center"
-        width={2560}
-        height={800}
+        width={2243}
+        height={701}
         decoding="async"
         fetchPriority="high"
       />
