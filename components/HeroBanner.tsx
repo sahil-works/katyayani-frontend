@@ -10,15 +10,17 @@ export default function HeroBanner() {
       duration={1}
       threshold={0.01}
       rootMargin="0px"
-      className="w-full bg-white"
+      className="w-full overflow-hidden bg-white"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={homeBannerImage}
         alt="Expect the best from Katyayani Designer Hub — Discover all the items with affordable prices, and take advantage of our products."
-        className="block h-auto w-full"
-        width={1024}
-        height={320}
+        className="block h-auto w-full max-w-none object-cover object-center"
+        width={2560}
+        height={800}
+        decoding="async"
+        fetchPriority="high"
       />
     </AnimateOnView>
   );
