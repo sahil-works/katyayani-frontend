@@ -15,7 +15,10 @@ const quickLinks = [
   { label: "Home", href: "/" },
   { label: "New Arrivals", href: "/new-arrivals" },
   { label: "All Collections", href: "/collections" },
+
   { label: "Contact Us", href: "/contact-us" },
+    { label: "Our Exchange", href: "/our-exchange" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
 ];
 
 export default function Footer() {
